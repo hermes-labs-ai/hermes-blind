@@ -1,0 +1,27 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-04-24T16:00:00Z",
+    "tools": [
+      { "vendor": "Hermes Labs", "name": "hand-authored", "version": "0.0.6" }
+    ],
+    "component": {
+      "bom-ref": "pkg:pypi/hermes-blind@0.0.6",
+      "type": "library",
+      "name": "hermes-blind",
+      "version": "0.0.6",
+      "description": "Context-compensation scaffold for LLM evaluation prompts",
+      "licenses": [{ "license": { "id": "MIT" } }],
+      "purl": "pkg:pypi/hermes-blind@0.0.6"
+    }
+  },
+  "components": [],
+  "dependencies": [
+    {
+      "ref": "pkg:pypi/hermes-blind@0.0.6",
+      "dependsOn": []
+    }
+  ]
+}

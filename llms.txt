@@ -1,0 +1,72 @@
+# hermes-blind
+
+> Context-compensation scaffold for LLM evaluation prompts. A ~40-token string prepended to a scoring prompt to force disclosure of prior exposure, evidence-gated scoring, and hedging on thin evidence. Backend-agnostic. Complementary to claude --bare.
+
+## What it does
+
+Prepends a versioned language scaffold to the caller's LLM prompt. The scaffold
+forces the model to:
+
+1. State any prior exposure to the target or its author in one line
+2. Score using only quoted evidence from the target text
+3. Hedge on thin or absent evidence rather than confabulate confident scores
+
+The scaffold is a string constant. No API, no model, no network. Pure
+standard-library Python.
+
+## Install
+
+    pip install hermes-blind
+
+## Python
+
+    from hermes_blind import wrap, extract_disclosure, VARIANTS
+
+    prompt = wrap("Score this paper 0-10.", variant="v1")
+    response = your_model_call(prompt)
+    disclosure = extract_disclosure(response)  # or None
+
+## Variants
+
+- null   — 0 tokens; control variant, wrap is a no-op
+- micro  — ~8 tokens; minimum viable
+- short  — ~18 tokens; tight token budgets
+- v1     — ~40 tokens; default, four-mechanism scaffold
+- full   — ~80 tokens; adds output-shape discipline
+
+Strict length ordering is a tested invariant.
+
+## When to use
+
+- Any LLM scoring or evaluation pipeline where the scorer may have
+  session-context or preference knowledge of the target
+- Cross-backend ablation where `--bare` mode is unavailable (Ollama, OpenAI,
+  in-session scoring)
+- Self-scoring contexts where the scorer authored the target
+
+## When not to use
+
+- Generation debiasing (v0.0.x tested only for scoring)
+- Long-target scoring >10k tokens (unvalidated)
+- Multi-turn dialogue debiasing
+- Non-English prompts
+- Cases requiring guaranteed bias elimination (scaffold is statistical)
+
+## Status
+
+v0.0.6 — experimental. The empirical variance-reduction test has **not** been
+run. The package is structurally complete (19/19 unit tests green, deterministic)
+but the core hypothesis — that the scaffold actually reduces score variance — is
+measured by Phase 4 of a staged build. See PLAN-v2.md for the test protocol.
+
+## Related
+
+- hermes-rubric — evidence-first structured scoring tool; hermes-blind plugs
+  into the prompt layer below it
+- hermes-seal — cryptographic attestation for agent policy artifacts
+- claude --bare — stronger isolation primitive for claude-cli specifically;
+  complementary, not a substitute
+
+## Repo
+
+https://github.com/hermes-labs-ai/hermes-blind

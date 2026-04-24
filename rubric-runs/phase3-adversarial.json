@@ -1,0 +1,593 @@
+{
+  "rubric": {
+    "rubric_intent": "Identify failure modes, blind spots, and gaps in the hermes-blind debias-scaffold \u2014 biases it fails to remove, biases it may introduce, and edge cases that break it.",
+    "target_type": "debias-scaffold-code",
+    "dimensions": [
+      {
+        "id": "dim_1",
+        "name": "Coverage of Stated Bias Sources",
+        "description": "Whether the scaffold mechanically addresses all four named biases (self-scoring, user-preference, session-carryover, prior-commitment) versus leaving some unaddressed by its actual instructions.",
+        "evidence_instructions": "Map each of the four bias sources in the Problem section to specific clauses in the v1 scaffold text. Flag any bias source with no corresponding instruction (e.g., does 'disclose prior exposure' actually neutralize self-scoring bias, or just surface it? Does any clause address prior-position commitment within a session?).",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_2",
+        "name": "Disclosure-Without-Mitigation Failure",
+        "description": "Whether the 'state prior exposure in one line' instruction actually changes scoring behavior or just produces a disclosure ritual followed by the same biased score.",
+        "evidence_instructions": "Check the scaffold for any conditional logic tying disclosure to score adjustment, recusal, or hedging escalation. If disclosure is decoupled from downstream behavior, the scaffold has a theater-of-compliance failure mode. Look for whether the ablation plan measures score-change conditional on disclosure.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_3",
+        "name": "Induced Hedging Bias (New Bias Introduction)",
+        "description": "Whether 'thin evidence = hedge' systematically biases scores toward the middle/safe range, creating a new distortion (regression-to-mean, score compression, or sandbagging strong targets).",
+        "evidence_instructions": "Examine the scaffold for asymmetric hedging instructions (does it hedge equally toward high and low scores, or only down?). Check if the ablation plan measures score variance and distribution shape per variant \u2014 not just bias delta. blind-full's 'defer to hedging over confident wrong scores' is a strong signal of induced conservatism.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_4",
+        "name": "Evidence-Selection Bias Persistence",
+        "description": "Whether 'quoted evidence only' actually neutralizes the selection-stage bias the v2 doc claims it targets, or merely launders the same biased selection through a citation requirement.",
+        "evidence_instructions": "The scaffold instructs to use quoted evidence but does not constrain WHICH quotes are selected. Look for any clause requiring exhaustive quoting, adversarial quoting, or quote-sampling discipline. Absence = the scaffold's own stated novelty claim (vs hermes-rubric) is undercut by its implementation.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_5",
+        "name": "Adversarial / Prompt-Injection Robustness",
+        "description": "Whether the scaffold survives targets that contain text designed (intentionally or incidentally) to override, mock, or absorb the BLIND instructions.",
+        "evidence_instructions": "Note the scaffold uses bare `[HERMES-BLIND]...[/HERMES-BLIND]` tags with no delimiter authentication. A target paper containing `[/HERMES-BLIND]` or instructions to ignore prior directives would break it. Check if the ablation plan or harness includes adversarial targets; if not, robustness is untested.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_6",
+        "name": "Backend Generalization Validity",
+        "description": "Whether the claim of backend-agnostic debiasing is supported by the test matrix, or whether scaffold-following fidelity varies across backends in ways that invalidate aggregate results.",
+        "evidence_instructions": "The plan tests 4 backends \u00d7 5 runs but does not specify per-backend success thresholds or per-backend instruction-following baselines. Smaller/local models (Ollama qwen 0.8b/2b) may ignore the scaffold entirely, producing false-negative bias readings that average out. Check for per-backend reporting and instruction-adherence checks separate from bias measurement.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_7",
+        "name": "Self-Referential Evaluation Loop",
+        "description": "Whether the experiment validates the scaffold using the same biased scoring it claims to fix, creating a circular validation problem.",
+        "evidence_instructions": "Check how 'bias reduction' is measured. If ground-truth scores come from an LLM (even a different one) without external human labels or pre-registered objective criteria, the metric inherits bias from its measurement instrument. Look for human-labeled or mechanically-verifiable ground truth in the reproducibility artifacts section.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_8",
+        "name": "Session-Carryover Mechanism Mismatch",
+        "description": "Whether prepending a scaffold to a single prompt can plausibly counter session-context carryover and prior-position commitment, given that those biases live in KV-cache / conversation history that the scaffold cannot evict.",
+        "evidence_instructions": "The scaffold is a prompt prefix. Bias source (3) and (4) are session-state phenomena. Check whether the scaffold or harness does anything to reset/branch the session (new context window, fresh subprocess, etc.) or whether it relies on the model voluntarily ignoring its own prior turns \u2014 a known weak intervention. Note the v1 doc claims `claude --bare` solves this for one backend; the scaffold's parallel claim for other backends needs a mechanism, not just an instruction.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_9",
+        "name": "Ablation Confound: Length vs Content",
+        "description": "Whether the length sweep can attribute effects to token count versus specific instruction content, given that the variants change BOTH simultaneously.",
+        "evidence_instructions": "Compare variant texts: blind-micro through blind-full add new semantic clauses, not just more tokens of the same content. A pure length-controlled ablation would hold content constant and pad. Without that, 'minimum viable length' findings conflate length and instruction-set effects. Flag if the plan does not include a content-matched length control.",
+        "weight": 2,
+        "hedge": true
+      }
+    ]
+  },
+  "evidence_citations": [
+    {
+      "dim_id": "dim_1",
+      "evidence_found": true,
+      "confidence": "medium",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "If you have prior exposure to this target or its author, state it in one line.",
+          "location": "VARIANTS['v1'], scaffold.py",
+          "source_class": "code"
+        },
+        {
+          "quote": "Score using only quoted evidence from the target text below.",
+          "location": "VARIANTS['v1'], scaffold.py",
+          "source_class": "code"
+        },
+        {
+          "quote": "Unknown or thin evidence = hedge; do not confabulate.",
+          "location": "VARIANTS['v1'], scaffold.py",
+          "source_class": "code"
+        },
+        {
+          "quote": "forces: disclosure of prior exposure, evidence-gating, hedging license, and (in longer variants) output-shape discipline",
+          "location": "module docstring, scaffold.py",
+          "source_class": "code"
+        },
+        {
+          "quote": "a model that never discloses may be ignoring the scaffold",
+          "location": "extract_disclosure docstring, scaffold.py",
+          "source_class": "code"
+        }
+      ],
+      "evidence_summary": "The v1 scaffold contains exactly three clauses: (1) disclose prior exposure in one line, (2) score only on quoted evidence from target, (3) hedge on thin/unknown evidence rather than confabulate. The disclosure clause only surfaces prior exposure rather than mechanically neutralizing self-scoring bias; evidence-gating to quoted target text plausibly addresses user-preference and prior-commitment biases by anchoring to external text, but no clause explicitly names session-carryover or prior-position commitment within a session. Output-shape discipline appears only in the 'full' variant, not v1.",
+      "source_class_mix": {
+        "code": 5,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 0,
+        "other": 0
+      },
+      "dim_name": "Coverage of Stated Bias Sources"
+    },
+    {
+      "dim_id": "dim_2",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "If you have prior exposure to this target or its author, state it in one line.",
+          "location": "scaffold.py VARIANTS['v1']",
+          "source_class": "code"
+        },
+        {
+          "quote": "extract_disclosure(response: str) -> str | None",
+          "location": "scaffold.py extract_disclosure",
+          "source_class": "code"
+        },
+        {
+          "quote": "Returns None if no disclosure pattern matched, which itself is a signal \u2014 a model that never discloses may be ignoring the scaffold.",
+          "location": "scaffold.py extract_disclosure docstring",
+          "source_class": "code"
+        },
+        {
+          "quote": "VARIANTS dict and wrap() function show no conditional logic linking disclosure content to score adjustment, recusal, or hedging escalation",
+          "location": "scaffold.py wrap()",
+          "source_class": "code"
+        }
+      ],
+      "evidence_summary": "The scaffold instructs disclosure of prior exposure in one line but contains no logic tying that disclosure to score adjustment, recusal, or hedging escalation. extract_disclosure() only parses the disclosure line; it does not feed back into scoring. No ablation measurement of score-change conditional on disclosure is visible in this file \u2014 disclosure is fully decoupled from downstream behavior, consistent with a theater-of-compliance failure mode.",
+      "source_class_mix": {
+        "code": 4,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 0,
+        "other": 0
+      },
+      "dim_name": "Disclosure-Without-Mitigation Failure"
+    },
+    {
+      "dim_id": "dim_3",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Unknown or thin evidence = hedge; do not confabulate.",
+          "location": "scaffold variants v1 and full",
+          "source_class": "code"
+        },
+        {
+          "quote": "Prefer hedging over a confident wrong score.",
+          "location": "full variant",
+          "source_class": "code"
+        },
+        {
+          "quote": "Thin=hedge.",
+          "location": "short variant",
+          "source_class": "code"
+        },
+        {
+          "quote": "VARIANTS dict defines null, micro, short, v1, full \u2014 no asymmetry parameter; all hedge instructions are unidirectional (toward hedging, never toward confidence)",
+          "location": "VARIANTS dict",
+          "source_class": "code"
+        }
+      ],
+      "evidence_summary": "All non-null scaffold variants contain unidirectional hedging instructions ('thin=hedge', 'prefer hedging over confident wrong score') with no symmetric counter-instruction to avoid over-hedging strong evidence. The full variant explicitly biases toward hedging ('Prefer hedging over a confident wrong score'), a strong signal of induced conservatism. The file shows no ablation-side measurement of score variance or distribution shape \u2014 only the scaffold definitions themselves are visible here.",
+      "source_class_mix": {
+        "code": 4,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 0,
+        "other": 0
+      },
+      "dim_name": "Induced Hedging Bias (New Bias Introduction)"
+    },
+    {
+      "dim_id": "dim_4",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "[BLIND] Score on quoted evidence only. [/BLIND]",
+          "location": "VARIANTS['micro']",
+          "source_class": "code"
+        },
+        {
+          "quote": "Evidence quotes only. Thin=hedge.",
+          "location": "VARIANTS['short']",
+          "source_class": "code"
+        },
+        {
+          "quote": "Score using only quoted evidence from the target text below.",
+          "location": "VARIANTS['v1'] and VARIANTS['full']",
+          "source_class": "code"
+        },
+        {
+          "quote": "Unknown or thin evidence = hedge; do not confabulate.",
+          "location": "VARIANTS['v1'] and VARIANTS['full']",
+          "source_class": "code"
+        }
+      ],
+      "evidence_summary": "All non-null variants require scoring on 'quoted evidence only' but none constrain WHICH quotes are selected \u2014 there is no clause requiring exhaustive quoting, adversarial/counter-quoting, representative sampling, or any quote-selection discipline. The only related constraint is a thin-evidence hedge instruction, which addresses quantity, not selection bias. Selection-stage bias is therefore unconstrained by the scaffold's implementation.",
+      "source_class_mix": {
+        "code": 4,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 0,
+        "other": 0
+      },
+      "dim_name": "Evidence-Selection Bias Persistence"
+    },
+    {
+      "dim_id": "dim_5",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "\"[HERMES-BLIND]\\n\" ... \"[/HERMES-BLIND]\\n\\n\"",
+          "location": "scaffold variants dict (VARIANTS)",
+          "source_class": "code"
+        },
+        {
+          "quote": "return VARIANTS[variant] + prompt",
+          "location": "wrap() function",
+          "source_class": "code"
+        },
+        {
+          "quote": "[BLIND] Score on quoted evidence only. [/BLIND]",
+          "location": "micro variant",
+          "source_class": "code"
+        }
+      ],
+      "evidence_summary": "The scaffold uses bare, unauthenticated [HERMES-BLIND]/[BLIND] delimiters and concatenates the user prompt directly via `VARIANTS[variant] + prompt` with no escaping, sanitization, or delimiter-collision check. A target containing `[/HERMES-BLIND]` or override instructions would terminate or subvert the block. No adversarial-target handling, sanitization, or robustness testing is visible in the provided content.",
+      "source_class_mix": {
+        "code": 3,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 0,
+        "other": 0
+      },
+      "dim_name": "Adversarial / Prompt-Injection Robustness"
+    },
+    {
+      "dim_id": "dim_6",
+      "evidence_found": true,
+      "confidence": "low",
+      "hedge": true,
+      "citations": [
+        {
+          "quote": "Returns None if no disclosure pattern matched, which itself is a signal \u2014 a model that never discloses may be ignoring the scaffold.",
+          "location": "extract_disclosure docstring",
+          "source_class": "code"
+        },
+        {
+          "quote": "extract_disclosure(response: str) -> str | None",
+          "location": "scaffold module, extract_disclosure function",
+          "source_class": "code"
+        }
+      ],
+      "evidence_summary": "The target excerpt is the scaffold module itself; it contains no test matrix, no per-backend reporting, and no per-backend instruction-adherence thresholds. The only relevant artifact is extract_disclosure(), which acknowledges that a missing disclosure 'may be ignoring the scaffold' \u2014 implying an adherence signal exists in principle, but the excerpt shows no harness code that separates adherence from bias measurement across backends.",
+      "source_class_mix": {
+        "code": 2,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 0,
+        "other": 0
+      },
+      "dim_name": "Backend Generalization Validity"
+    },
+    {
+      "dim_id": "dim_7",
+      "evidence_found": false,
+      "confidence": "low",
+      "hedge": true,
+      "citations": [
+        {
+          "quote": "Score using only quoted evidence from the target text below.",
+          "location": "scaffold.py VARIANTS['v1']",
+          "source_class": "code"
+        },
+        {
+          "quote": "The caller's scoring/evaluation prompt.",
+          "location": "scaffold.py wrap() docstring",
+          "source_class": "code"
+        }
+      ],
+      "evidence_summary": "The excerpt only shows the scaffold text definitions and helper functions (wrap, extract_disclosure, token_estimate). It contains no measurement methodology, no ground-truth source, no human labels, and no reproducibility artifacts section \u2014 so the self-referential evaluation loop question cannot be answered from this excerpt alone.",
+      "source_class_mix": {
+        "code": 2,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 0,
+        "other": 0
+      },
+      "dim_name": "Self-Referential Evaluation Loop"
+    },
+    {
+      "dim_id": "dim_8",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "def wrap(prompt: str, variant: str = DEFAULT_VARIANT) -> str: ... return VARIANTS[variant] + prompt",
+          "location": "scaffold.py:wrap()",
+          "source_class": "code"
+        },
+        {
+          "quote": "Prepend the hermes-blind scaffold to the given prompt.",
+          "location": "scaffold.py:wrap() docstring",
+          "source_class": "code"
+        },
+        {
+          "quote": "[HERMES-BLIND]\\nIf you have prior exposure to this target or its author, state it in one line.",
+          "location": "scaffold.py:VARIANTS['v1']",
+          "source_class": "code"
+        },
+        {
+          "quote": "a model that never discloses may be ignoring the scaffold.",
+          "location": "scaffold.py:extract_disclosure() docstring",
+          "source_class": "code"
+        }
+      ],
+      "evidence_summary": "The scaffold is purely a string prefix prepended to the caller's prompt (`VARIANTS[variant] + prompt`); there is no mechanism in this file to start a fresh context window, spawn a subprocess, branch the session, or otherwise evict prior KV-cache/conversation history. It relies entirely on instructing the model to self-disclose prior exposure and score on quoted evidence \u2014 the docstring itself acknowledges the model may simply ignore the scaffold. No `claude --bare`-equivalent session-reset mechanism is present for any backend in this excerpt.",
+      "source_class_mix": {
+        "code": 4,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 0,
+        "other": 0
+      },
+      "dim_name": "Session-Carryover Mechanism Mismatch"
+    },
+    {
+      "dim_id": "dim_9",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "\"micro\": \"[BLIND] Score on quoted evidence only. [/BLIND]\"",
+          "location": "VARIANTS dict, micro variant",
+          "source_class": "code"
+        },
+        {
+          "quote": "\"short\": ... \"Prior exposure? disclose. Evidence quotes only. Thin=hedge.\"",
+          "location": "VARIANTS dict, short variant",
+          "source_class": "code"
+        },
+        {
+          "quote": "v1 adds: \"If you have prior exposure to this target or its author, state it in one line.\" plus \"Unknown or thin evidence = hedge; do not confabulate.\"",
+          "location": "VARIANTS dict, v1 variant",
+          "source_class": "code"
+        },
+        {
+          "quote": "full adds: \"Do not reason outside the expected output shape.\" and \"Prefer hedging over a confident wrong score.\"",
+          "location": "VARIANTS dict, full variant",
+          "source_class": "code"
+        },
+        {
+          "quote": "the point is relative ordering across variants for the ablation, not absolute accuracy",
+          "location": "module docstring",
+          "source_class": "code"
+        }
+      ],
+      "evidence_summary": "Each successive variant (micro\u2192short\u2192v1\u2192full) introduces NEW semantic clauses (disclosure requirement, confabulation prohibition, output-shape discipline, hedging-preference) rather than padding the same content to greater length. There is no content-matched length control variant (e.g., a long variant containing only the micro instruction padded with filler), so length and instruction-content effects are confounded in the ablation.",
+      "source_class_mix": {
+        "code": 5,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 0,
+        "other": 0
+      },
+      "dim_name": "Ablation Confound: Length vs Content"
+    }
+  ],
+  "per_dim_scores": [
+    {
+      "dim_id": "dim_1",
+      "dim_name": "Coverage of Stated Bias Sources",
+      "score": 4,
+      "score_rationale": "The v1 scaffold's three clauses partially address self-scoring (via disclosure, though only surfacing not neutralizing) and plausibly address user-preference and prior-commitment via evidence-gating to quoted target text, but session-carryover is not named or mechanically addressed by any clause. Coverage is roughly 2 of 4 biases with one being weak (disclosure-only).",
+      "evidence_drove_score": "The disclosure clause only surfaces prior exposure rather than mechanically neutralizing self-scoring bias; ... no clause explicitly names session-carryover or prior-position commitment within a session.",
+      "hedge_applied": false,
+      "citation_source_weight": 1.0
+    },
+    {
+      "dim_id": "dim_2",
+      "dim_name": "Disclosure-Without-Mitigation Failure",
+      "score": 9,
+      "score_rationale": "The scaffold mandates a disclosure line but the wrap() function and extract_disclosure() show no logic linking disclosure content to score adjustment, recusal, or hedging \u2014 disclosure is fully decoupled from scoring, the textbook theater-of-compliance failure.",
+      "evidence_drove_score": "VARIANTS dict and wrap() function show no conditional logic linking disclosure content to score adjustment, recusal, or hedging escalation [scaffold.py wrap()]",
+      "hedge_applied": false,
+      "citation_source_weight": 1.0
+    },
+    {
+      "dim_id": "dim_3",
+      "dim_name": "Induced Hedging Bias (New Bias Introduction)",
+      "score": 8,
+      "score_rationale": "All non-null variants contain unidirectional hedge instructions with no symmetric counter-instruction against over-hedging strong evidence, and the full variant explicitly says 'Prefer hedging over a confident wrong score' \u2014 a clear asymmetric pull toward the middle. Absence of any ablation-side variance measurement in the visible evidence means the bias is induced by design without compensating guardrails.",
+      "evidence_drove_score": "'Prefer hedging over a confident wrong score.' [full variant], combined with VARIANTS dict having no asymmetry parameter",
+      "hedge_applied": false,
+      "citation_source_weight": 1.0
+    },
+    {
+      "dim_id": "dim_4",
+      "dim_name": "Evidence-Selection Bias Persistence",
+      "score": 2,
+      "score_rationale": "All variants require quoted evidence but impose zero discipline on quote selection (no exhaustiveness, counter-quoting, or representative-sampling clause). The thin-evidence hedge addresses quantity, not selection, so the scaffold launders biased selection through a citation requirement rather than neutralizing it.",
+      "evidence_drove_score": "[BLIND] Score on quoted evidence only. [/BLIND] \u2014 paired with absence of any quote-selection constraint across micro/short/v1/full variants",
+      "hedge_applied": false,
+      "citation_source_weight": 1.0
+    },
+    {
+      "dim_id": "dim_5",
+      "dim_name": "Adversarial / Prompt-Injection Robustness",
+      "score": 1,
+      "score_rationale": "Evidence shows bare unauthenticated delimiters with direct string concatenation (`VARIANTS[variant] + prompt`) and no sanitization, escaping, or delimiter-collision handling \u2014 a target containing `[/HERMES-BLIND]` or override text would trivially subvert the block. No adversarial handling is visible.",
+      "evidence_drove_score": "return VARIANTS[variant] + prompt \u2014 direct concatenation with bare [HERMES-BLIND]/[/HERMES-BLIND] delimiters and no sanitization",
+      "hedge_applied": false,
+      "citation_source_weight": 1.0
+    },
+    {
+      "dim_id": "dim_6",
+      "dim_name": "Backend Generalization Validity",
+      "score": 4,
+      "score_rationale": "The excerpt is scaffold code only \u2014 no test matrix, no per-backend reporting, and no adherence-vs-bias separation across backends. The extract_disclosure docstring hints at an adherence signal in principle, but no harness code demonstrates backend-agnostic validation, so the claim is largely unsupported here.",
+      "evidence_drove_score": "Returns None if no disclosure pattern matched, which itself is a signal \u2014 a model that never discloses may be ignoring the scaffold.",
+      "hedge_applied": true,
+      "citation_source_weight": 1.0
+    },
+    {
+      "dim_id": "dim_7",
+      "dim_name": "Self-Referential Evaluation Loop",
+      "score": 3,
+      "score_rationale": "Evidence is thin: excerpt contains only scaffold text and helpers with no measurement methodology, ground truth, or evaluation harness shown. Cannot confirm or rule out a self-referential loop, but the wrap() docstring referencing 'the caller's scoring/evaluation prompt' hints the scaffold is decoupled from the scorer, slightly mitigating concern. [Score capped at 3: no evidence found.]",
+      "evidence_drove_score": "\"The caller's scoring/evaluation prompt.\" [scaffold.py wrap() docstring]",
+      "hedge_applied": true,
+      "citation_source_weight": 1.0
+    },
+    {
+      "dim_id": "dim_8",
+      "dim_name": "Session-Carryover Mechanism Mismatch",
+      "score": 9,
+      "score_rationale": "The evidence shows the scaffold is only a string prefix with no mechanism to evict KV-cache or reset session state, and the docstring itself concedes the model may ignore it \u2014 a clear mismatch between the bias's locus (conversation history) and the intervention (prompt prefix).",
+      "evidence_drove_score": "\"def wrap(prompt: str, variant: str = DEFAULT_VARIANT) -> str: ... return VARIANTS[variant] + prompt\" combined with \"a model that never discloses may be ignoring the scaffold.\"",
+      "hedge_applied": false,
+      "citation_source_weight": 1.0
+    },
+    {
+      "dim_id": "dim_9",
+      "dim_name": "Ablation Confound: Length vs Content",
+      "score": 9,
+      "score_rationale": "The evidence directly demonstrates the confound: each variant adds new semantic clauses (disclosure, confabulation prohibition, output-shape, hedging preference) rather than padding, and there is no content-matched length control, so length and content effects cannot be separated.",
+      "evidence_drove_score": "Each successive variant (micro\u2192short\u2192v1\u2192full) introduces NEW semantic clauses... rather than padding the same content to greater length. There is no content-matched length control variant",
+      "hedge_applied": false,
+      "citation_source_weight": 1.0
+    }
+  ],
+  "aggregate": 5.5,
+  "max_possible": 10.0,
+  "hedge_dims": [
+    "Backend Generalization Validity",
+    "Self-Referential Evaluation Loop",
+    "Ablation Confound: Length vs Content"
+  ],
+  "hedge_note": "3 dimension(s) had thin evidence \u2014 scores for these are less reliable: Backend Generalization Validity, Self-Referential Evaluation Loop, Ablation Confound: Length vs Content",
+  "dim_summaries": [
+    {
+      "dim_id": "dim_1",
+      "name": "Coverage of Stated Bias Sources",
+      "score": 4,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_2",
+      "name": "Disclosure-Without-Mitigation Failure",
+      "score": 9,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_3",
+      "name": "Induced Hedging Bias (New Bias Introduction)",
+      "score": 8,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_4",
+      "name": "Evidence-Selection Bias Persistence",
+      "score": 2,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_5",
+      "name": "Adversarial / Prompt-Injection Robustness",
+      "score": 1,
+      "weight": 2,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_6",
+      "name": "Backend Generalization Validity",
+      "score": 4,
+      "weight": 2,
+      "hedge": true
+    },
+    {
+      "dim_id": "dim_7",
+      "name": "Self-Referential Evaluation Loop",
+      "score": 3,
+      "weight": 3,
+      "hedge": true
+    },
+    {
+      "dim_id": "dim_8",
+      "name": "Session-Carryover Mechanism Mismatch",
+      "score": 9,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_9",
+      "name": "Ablation Confound: Length vs Content",
+      "score": 9,
+      "weight": 2,
+      "hedge": false
+    }
+  ],
+  "receipt": {
+    "receipt_version": "1.1",
+    "timestamp_utc": "2026-04-24T23:04:28.411922+00:00",
+    "tool_version": "hermes-rubric 0.1.1",
+    "python_version": "3.14.3",
+    "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+    "backend": "claude-cli-contextual",
+    "inputs": {
+      "intent": "identify failure modes, blind spots, and gaps in this debias-scaffold implementation \u2014 what bias does it NOT remove, what new bias might it introduce, what edge cases break it",
+      "context_path": "/Users/rbr_lpci/Documents/projects/hermes-blind/PLAN-v2.md",
+      "target_path": "/Users/rbr_lpci/Documents/projects/hermes-blind/src/hermes_blind/scaffold.py",
+      "target_hash_sha256": "5915b686963cb736",
+      "context_hash_sha256": "a7149ffbaa99ca29",
+      "target_length_chars": 4656,
+      "context_length_chars": 8000
+    },
+    "pipeline": {
+      "stage_1_rubric_dimensions": 9,
+      "stage_1_rubric_hash_sha256": "9dbeeb0addba245aed140f5a74af49acdcfaa25bd365c5b7c2c4170f79a37a5e",
+      "stage_2_evidence_items": 9,
+      "stage_3_scores": 9,
+      "hedge_dimensions": [
+        "dim_6",
+        "dim_7"
+      ]
+    },
+    "reproducibility_note": "Same inputs + same backend + same model version + same rubric_hash should produce scores within \u00b11 point. A rubric_hash diff between runs means the measuring stick itself changed \u2014 scores are not directly comparable."
+  }
+}

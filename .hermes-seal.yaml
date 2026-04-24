@@ -1,0 +1,39 @@
+# Hermes Seal manifest — placeholder.
+# Will be overwritten by `sudo hermes-seal grant <repo-path>` with real values.
+seal_version: 1
+repo: hermes-labs-ai/hermes-blind
+granted: '2026-04-24T00:00:00Z'
+expires: '2027-04-24T00:00:00Z'
+categories:
+  continuity:
+    health_endpoint: ''
+    graceful_degradation:
+    - dependency: none-runtime
+      on_failure: n/a
+      verified_by: tests/test_graceful_degrade.py::test_no_runtime_dependencies
+      env: {}
+      python_bin: .venv/bin/python
+      command: null
+  reliability:
+    test_command: .venv/bin/python -m pytest -q tests/
+    coverage_min: 0.0
+    no_silent_failures: true
+    scan_paths:
+    - src/hermes_blind
+    silent_failure_check: null
+  compliance:
+    license: MIT
+    sbom: sbom.cdx.json
+    lintlang_clean: false
+    eu_ai_act: n/a
+  mom_ready:
+    install: pip install hermes-blind
+    quickstart: README.md#quickstart
+    errors_human: true
+signing:
+  algorithm: ed25519
+  pubkey: placeholder
+  signature: placeholder
+  issuer: null
+revocation:
+  list: https://hermes-labs.ai/seal/revoked.json

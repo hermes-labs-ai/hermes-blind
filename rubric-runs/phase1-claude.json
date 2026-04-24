@@ -1,0 +1,571 @@
+{
+  "rubric": {
+    "rubric_intent": "Evaluate whether the HERMES-BLIND debias-scaffold design plan is sound, backend-agnostic, and empirically falsifiable",
+    "target_type": "design-plan",
+    "dimensions": [
+      {
+        "id": "dim_1",
+        "name": "Bias Mechanism Specificity",
+        "description": "Measures whether the plan names the specific bias(es) it debiases and the causal mechanism by which the scaffold intervenes, rather than gesturing at 'bias' generically.",
+        "evidence_instructions": "Search the plan for named bias types (e.g., sycophancy, anchoring, authority-gradient, position bias) and a stated intervention mechanism (pre-commitment, blinding, perspective-swap, counterfactual rerun). Cite the section/line where the mechanism is defined. Flag if only 'reduces bias' is asserted without mechanism.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_2",
+        "name": "Falsifiability & Success Metric",
+        "description": "Measures whether the plan defines a quantitative metric, a baseline, and a threshold at which the scaffold would be declared to have failed.",
+        "evidence_instructions": "Look for a named metric (e.g., agreement-rate delta, TE, flip-rate under counterfactual), a baseline comparison (unscaffolded model or alternative scaffold), and an explicit pass/fail threshold. Cite file:line. If only 'improves outcomes' appears, score low.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_3",
+        "name": "Backend Agnosticism",
+        "description": "Measures whether the scaffold's contract is defined over message-level I/O such that it runs unchanged against multiple model backends, without backend-specific hooks.",
+        "evidence_instructions": "Search for an interface/contract definition (input schema, output schema) and a list of backends the plan commits to testing (e.g., Claude, GPT, Qwen, Llama). Check for backend-specific calls (tool-use, system-prompt quirks, logprobs) that would break portability. Cite the interface section.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_4",
+        "name": "Evaluation Harness Design",
+        "description": "Measures whether the plan specifies a concrete dataset, sample size, randomization/counterbalancing, and statistical test for detecting the debias effect.",
+        "evidence_instructions": "Look for named dataset(s), N per condition, seed/randomization strategy, and a statistical test (paired bootstrap, McNemar, permutation). Cite section. If the plan says 'run experiments' without specifying these, score low.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_5",
+        "name": "Failure Mode & Leakage Analysis",
+        "description": "Measures whether the plan anticipates ways the scaffold could spuriously appear to work (e.g., metric gaming, blinding leakage, distribution shift) and how it will detect them.",
+        "evidence_instructions": "Search for sections labeled 'failure modes', 'threats to validity', 'leakage', 'adversarial checks', or sanity controls (e.g., negative-control prompts). Cite. If absent entirely, score low.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_6",
+        "name": "Scaffold Minimality & Ablation Plan",
+        "description": "Measures whether the plan isolates which scaffold components drive the effect via planned ablations, rather than bundling multiple interventions.",
+        "evidence_instructions": "Look for an enumerated component list and a table/section of planned ablations (component-on vs component-off). Cite. If the scaffold is monolithic with no ablation plan, score low.",
+        "weight": 2,
+        "hedge": true
+      },
+      {
+        "id": "dim_7",
+        "name": "Reproducibility Artifacts",
+        "description": "Measures whether the plan commits to releasing prompts, seeds, model versions, data hashes, and run logs sufficient for an external party to rerun the evaluation.",
+        "evidence_instructions": "Search for 'reproducibility', 'artifacts', 'receipts', 'hashes', 'seeds', or a release checklist. Cite. If only code release is mentioned without prompt/seed/version pinning, score medium.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_8",
+        "name": "Scope Honesty",
+        "description": "Measures whether the plan states where the scaffold is NOT expected to work (task classes, model sizes, domains) rather than claiming universal debiasing.",
+        "evidence_instructions": "Look for explicit out-of-scope statements, known-limitation sections, or a task taxonomy with expected-effective vs expected-ineffective cells. Cite. A plan claiming generality everywhere scores low.",
+        "weight": 1,
+        "hedge": true
+      }
+    ]
+  },
+  "evidence_citations": [
+    {
+      "dim_id": "dim_1",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Self-scoring bias; User-preference bias; Session-context carryover; Prior-position commitment",
+          "location": "## Problem (items 1-4)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "commitment-consistency and motivated-reasoning effects",
+          "location": "## Problem, item 3",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Disclosure of prior exposure (self-awareness of bias is a primary debiaser); Evidence-gating \u2014 only quoted text from the target is admissible; Hedging license ...; Output-shape discipline",
+          "location": "## Hypothesis",
+          "source_class": "doc"
+        },
+        {
+          "quote": "HERMES-BLIND is the suppression dual \u2014 a scaffold that actively pushes state out rather than passing it through",
+          "location": "## Hypothesis (closing paragraph)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "If you have prior exposure to this target or its author, state it in one line. Score using only quoted evidence from the target text below. Unknown or thin evidence = hedge; do not confabulate.",
+          "location": "## Draft scaffold \u2014 HERMES-BLIND v1",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "Plan names four specific biases (self-scoring, user-preference, session-context carryover, prior-position commitment) and references commitment-consistency and motivated-reasoning effects. It specifies four causal intervention mechanisms (forced disclosure of prior exposure, evidence-gating to quoted text only, hedging license on thin evidence, and output-shape discipline) and frames the scaffold as a 'suppression dual' that pushes state out, with the draft scaffold text instantiating each mechanism.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 5,
+        "other": 0
+      },
+      "dim_name": "Bias Mechanism Specificity"
+    },
+    {
+      "dim_id": "dim_2",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Pass if: variance reduction \u226530% AND cross-model std \u22641.0 AND signal correlation preserved within \u00b10.1",
+          "location": "Test protocol section, step 4",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Reduce score variance on repeated runs of the same target by \u226530%",
+          "location": "Success criteria section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Improve cross-model score convergence (std across backends \u22641.0 on a 0-10 scale for the same target)",
+          "location": "Success criteria section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Score each paper 5x with BLIND + 5x without, on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}",
+          "location": "Test protocol section, step 2",
+          "source_class": "doc"
+        },
+        {
+          "quote": "4 papers \u00d7 2 conditions \u00d7 5 runs \u00d7 4 models = 160 scoring runs",
+          "location": "Test protocol section",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "Plan defines named metrics (within-model variance, cross-model std, signal correlation), explicit baseline (with-BLIND vs without-BLIND across four models on the applied/ corpus), and quantitative pass/fail thresholds (\u226530% variance reduction, std \u22641.0, correlation within \u00b10.1).",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 5,
+        "other": 0
+      },
+      "dim_name": "Falsifiability & Success Metric"
+    },
+    {
+      "dim_id": "dim_3",
+      "evidence_found": true,
+      "confidence": "medium",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Be backend-agnostic (works with Opus, Sonnet, Haiku, Ollama qwen3.5)",
+          "location": "Success criteria",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Be composable \u2014 prepend as a string, no API changes needed",
+          "location": "Success criteria",
+          "source_class": "doc"
+        },
+        {
+          "quote": "on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}",
+          "location": "Test protocol, step 2",
+          "source_class": "doc"
+        },
+        {
+          "quote": "hermes-rubric \u2014 prepend to every backend call in backends.py",
+          "location": "Integration points",
+          "source_class": "doc"
+        },
+        {
+          "quote": "[HERMES-BLIND] ... [/HERMES-BLIND]",
+          "location": "Draft scaffold \u2014 HERMES-BLIND v1",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The plan explicitly commits to backend agnosticism: the scaffold is a ~40-token string prepended to any prompt with 'no API changes needed', and the test protocol exercises it across four distinct backends (Opus, Sonnet, Haiku, Ollama qwen3.5:9b). No backend-specific hooks (tool-use, logprobs, system-prompt quirks) are invoked; the contract is plain message-level text I/O. However, no formal input/output schema is defined \u2014 portability is asserted via the string-prepend integration pattern rather than a typed interface, which is why confidence is medium rather than high.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 5,
+        "other": 0
+      },
+      "dim_name": "Backend Agnosticism"
+    },
+    {
+      "dim_id": "dim_4",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Use the 4-paper `applied/` corpus in hermes-rubric as target set",
+          "location": "Test protocol (Phase 4 in the meta-plan), step 1",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Score each paper 5x with BLIND + 5x without, on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}",
+          "location": "Test protocol, step 2",
+          "source_class": "doc"
+        },
+        {
+          "quote": "4 papers \u00d7 2 conditions \u00d7 5 runs \u00d7 4 models = 160 scoring runs",
+          "location": "Test protocol, totals line",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Compute: within-model variance, across-model mean std, overall signal preservation (correlation with ground-truth ranking)",
+          "location": "Test protocol, step 3",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Pass if: variance reduction \u226530% AND cross-model std \u22641.0 AND signal correlation preserved within \u00b10.1",
+          "location": "Test protocol, step 4",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Reduce score variance on repeated runs of the same target by \u226530%",
+          "location": "Success criteria",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "Plan names a concrete dataset (4-paper applied/ corpus in hermes-rubric), specifies N per condition (5 runs \u00d7 2 conditions \u00d7 4 models = 160 runs), lists the 4 models, and defines pass thresholds (\u226530% variance reduction, cross-model std \u22641.0, correlation within \u00b10.1). However, no explicit randomization/seed strategy or named statistical test (e.g., paired bootstrap, McNemar, permutation) is specified \u2014 only descriptive statistics (variance, std, correlation) with fixed thresholds.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 6,
+        "other": 0
+      },
+      "dim_name": "Evaluation Harness Design"
+    },
+    {
+      "dim_id": "dim_5",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Known failure modes to design against",
+          "location": "## Known failure modes to design against",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Scaffold ignored \u2014 model treats it as boilerplate and proceeds with full context anyway. Mitigation: force a structural output",
+          "location": "Known failure modes section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Confession without compensation \u2014 model discloses exposure but scores as-if biased anyway. Mitigation: evidence-gate makes prior-derived claims inadmissible",
+          "location": "Known failure modes section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Over-hedging \u2014 model hedges everything to avoid bias, compressing the score range and reducing signal",
+          "location": "Known failure modes section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Scaffold contamination \u2014 the scaffold itself contains cues about what the 'right' answer is. Mitigation: scaffold must be intent-agnostic",
+          "location": "Known failure modes section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Not suppress signal \u2014 a target that legitimately deserves a high score should still score high; BLIND should debias, not flatten",
+          "location": "## Success criteria",
+          "source_class": "doc"
+        },
+        {
+          "quote": "signal correlation preserved within \u00b10.1",
+          "location": "## Test protocol",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The plan includes a dedicated 'Known failure modes to design against' section enumerating four specific failure modes (scaffold ignored, confession without compensation, over-hedging, scaffold contamination) each with a mitigation. It also builds a signal-preservation check into success criteria and the test protocol (correlation with ground-truth ranking within \u00b10.1) to detect the 'spuriously appears to work by flattening scores' failure mode.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 7,
+        "other": 0
+      },
+      "dim_name": "Failure Mode & Leakage Analysis"
+    },
+    {
+      "dim_id": "dim_6",
+      "evidence_found": false,
+      "confidence": "low",
+      "hedge": true,
+      "citations": [
+        {
+          "quote": "Score each paper 5x with BLIND + 5x without, on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}",
+          "location": "Test protocol (Phase 4 in the meta-plan)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "A short (~40-token) language scaffold, prepended to any scoring prompt",
+          "location": "Hypothesis",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The plan tests the scaffold as a monolithic unit (BLIND on vs BLIND off) rather than ablating its individual components (disclosure, evidence-gating, hedging license, output-shape discipline). Components are enumerated in the Hypothesis section, but no per-component ablation table or plan exists to isolate which element drives the effect.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 2,
+        "other": 0
+      },
+      "dim_name": "Scaffold Minimality & Ablation Plan"
+    },
+    {
+      "dim_id": "dim_7",
+      "evidence_found": true,
+      "confidence": "low",
+      "hedge": true,
+      "citations": [
+        {
+          "quote": "Score each paper 5x with BLIND + 5x without, on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}",
+          "location": "Test protocol (Phase 4 in the meta-plan), step 2",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Compute: within-model variance, across-model mean std, overall signal preservation (correlation with ground-truth ranking)",
+          "location": "Test protocol, step 3",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Be empirically validated with a falsifiable test protocol",
+          "location": "Success criteria",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The plan specifies a test protocol with model versions (Opus, Sonnet, Haiku, qwen3.5:9b), run counts (5x), and target corpus (4-paper applied/ corpus), but does not commit to releasing prompts, seeds, data hashes, run logs, or a reproducibility/artifact checklist. Model pinning is partial (named models, no version hashes) and no seed/prompt-release commitments are present.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 3,
+        "other": 0
+      },
+      "dim_name": "Reproducibility Artifacts"
+    },
+    {
+      "dim_id": "dim_8",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Out of scope for v1: Fine-tuning a model to treat a single symbol (\u2298) as 'discard context'; Multi-turn debiasing rituals; Cross-lingual testing (v1 English only); Non-scoring tasks (classification, extraction \u2014 testable in v2)",
+          "location": "Out of scope for v1 section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "claude --bare mode ... does nothing for (1) or (4), nothing for other backends, and nothing for scoring calls that happen in-session without subprocess isolation.",
+          "location": "Problem section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Scaffold ignored \u2014 model treats it as boilerplate and proceeds with full context anyway.",
+          "location": "Known failure modes to design against",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Not suppress signal \u2014 a target that legitimately deserves a high score should still score high; BLIND should debias, not flatten",
+          "location": "Success criteria section",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The plan contains an explicit 'Out of scope for v1' section enumerating excluded task classes (non-scoring tasks, cross-lingual, multi-turn rituals, fine-tuning) and a 'Known failure modes' section acknowledging where the scaffold may not work. It also explicitly narrows claims (English only, scoring only, v1) rather than claiming universal debiasing.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 4,
+        "other": 0
+      },
+      "dim_name": "Scope Honesty"
+    }
+  ],
+  "per_dim_scores": [
+    {
+      "dim_id": "dim_1",
+      "dim_name": "Bias Mechanism Specificity",
+      "score": 6,
+      "score_rationale": "The plan enumerates four specific named biases (self-scoring, user-preference, session-context carryover, prior-position commitment) and pairs them with four distinct causal intervention mechanisms (disclosure, evidence-gating, hedging license, output-shape discipline), with the draft scaffold text instantiating each. This goes well beyond generic 'bias' gesturing. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "\"Disclosure of prior exposure (self-awareness of bias is a primary debiaser); Evidence-gating \u2014 only quoted text from the target is admissible; Hedging license ...; Output-shape discipline\" [## Hypothesis]",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_2",
+      "dim_name": "Falsifiability & Success Metric",
+      "score": 6,
+      "score_rationale": "Evidence shows named quantitative metrics (within-model variance, cross-model std, signal correlation), an explicit paired baseline (with-BLIND vs without-BLIND across four models), and precise pass/fail thresholds (\u226530% variance reduction, std \u22641.0, correlation within \u00b10.1) \u2014 all three falsifiability components are present and exemplary. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "Pass if: variance reduction \u226530% AND cross-model std \u22641.0 AND signal correlation preserved within \u00b10.1 [Test protocol section, step 4]",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_3",
+      "dim_name": "Backend Agnosticism",
+      "score": 6,
+      "score_rationale": "The scaffold is defined as a plain string prepend with explicit cross-backend testing across four distinct providers (Opus, Sonnet, Haiku, Ollama qwen3.5:9b) and uses no backend-specific hooks like tool-use or logprobs, satisfying message-level I/O agnosticism. Score is held below 9-10 because portability is asserted via integration pattern rather than a formal typed schema, matching the medium-confidence hedge. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "\"Be composable \u2014 prepend as a string, no API changes needed\" and test protocol \"on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}\"",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_4",
+      "dim_name": "Evaluation Harness Design",
+      "score": 6,
+      "score_rationale": "Plan specifies concrete dataset, sample size (160 runs), models, and quantitative pass thresholds, but lacks explicit randomization/seed strategy and a named inferential statistical test \u2014 only descriptive statistics with fixed thresholds. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "4 papers \u00d7 2 conditions \u00d7 5 runs \u00d7 4 models = 160 scoring runs; Pass if: variance reduction \u226530% AND cross-model std \u22641.0 AND signal correlation preserved within \u00b10.1",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_5",
+      "dim_name": "Failure Mode & Leakage Analysis",
+      "score": 6,
+      "score_rationale": "The plan has a dedicated section enumerating four concrete failure modes each paired with a specific mitigation, and additionally builds a quantitative signal-preservation check (\u00b10.1 correlation with ground-truth ranking) into the test protocol to detect the flattening failure mode. This goes beyond listing risks to operationalizing detection. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "'Known failure modes to design against' section with four named failure modes + mitigations, combined with 'signal correlation preserved within \u00b10.1' in the test protocol",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_6",
+      "dim_name": "Scaffold Minimality & Ablation Plan",
+      "score": 3,
+      "score_rationale": "Plan tests scaffold monolithically (BLIND on/off) without per-component ablation, though components are enumerated in the Hypothesis. Hedge applied due to low confidence. [Score capped at 3: no evidence found.]",
+      "evidence_drove_score": "Score each paper 5x with BLIND + 5x without, on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}",
+      "hedge_applied": true,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_7",
+      "dim_name": "Reproducibility Artifacts",
+      "score": 4,
+      "score_rationale": "The plan names model identifiers and run counts but makes no commitment to release prompts, seeds, data hashes, run logs, or an artifact checklist; model pinning is partial (no version hashes). Hedge clamps the score into [3,7], and the thin, partial evidence warrants the low end.",
+      "evidence_drove_score": "Score each paper 5x with BLIND + 5x without, on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}",
+      "hedge_applied": true,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_8",
+      "dim_name": "Scope Honesty",
+      "score": 6,
+      "score_rationale": "The plan explicitly enumerates excluded task classes (non-scoring, cross-lingual, multi-turn, fine-tuning) in an 'Out of scope for v1' section and acknowledges known failure modes, narrowing claims to English scoring v1 rather than universal debiasing. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "Out of scope for v1: Fine-tuning a model to treat a single symbol (\u2298) as 'discard context'; Multi-turn debiasing rituals; Cross-lingual testing (v1 English only); Non-scoring tasks (classification, extraction \u2014 testable in v2)",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    }
+  ],
+  "aggregate": 5.4,
+  "max_possible": 10.0,
+  "hedge_dims": [
+    "Scaffold Minimality & Ablation Plan",
+    "Reproducibility Artifacts",
+    "Scope Honesty"
+  ],
+  "hedge_note": "3 dimension(s) had thin evidence \u2014 scores for these are less reliable: Scaffold Minimality & Ablation Plan, Reproducibility Artifacts, Scope Honesty",
+  "dim_summaries": [
+    {
+      "dim_id": "dim_1",
+      "name": "Bias Mechanism Specificity",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_2",
+      "name": "Falsifiability & Success Metric",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_3",
+      "name": "Backend Agnosticism",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_4",
+      "name": "Evaluation Harness Design",
+      "score": 6,
+      "weight": 2,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_5",
+      "name": "Failure Mode & Leakage Analysis",
+      "score": 6,
+      "weight": 2,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_6",
+      "name": "Scaffold Minimality & Ablation Plan",
+      "score": 3,
+      "weight": 2,
+      "hedge": true
+    },
+    {
+      "dim_id": "dim_7",
+      "name": "Reproducibility Artifacts",
+      "score": 4,
+      "weight": 2,
+      "hedge": true
+    },
+    {
+      "dim_id": "dim_8",
+      "name": "Scope Honesty",
+      "score": 6,
+      "weight": 1,
+      "hedge": false
+    }
+  ],
+  "receipt": {
+    "receipt_version": "1.1",
+    "timestamp_utc": "2026-04-24T21:13:46.084732+00:00",
+    "tool_version": "hermes-rubric 0.1.1",
+    "python_version": "3.14.3",
+    "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+    "backend": "claude-cli-contextual",
+    "inputs": {
+      "intent": "evaluate whether this design plan for a debias-scaffold (HERMES-BLIND) is sound, backend-agnostic, and empirically falsifiable",
+      "context_path": "/Users/rbr_lpci/Documents/projects/hermes-rubric/INTENT.md",
+      "target_path": "/Users/rbr_lpci/Documents/projects/hermes-blind/PLAN-v1.md",
+      "target_hash_sha256": "eb69574e22451499",
+      "context_hash_sha256": "502e10bacdc5b7f8",
+      "target_length_chars": 5350,
+      "context_length_chars": 1768
+    },
+    "pipeline": {
+      "stage_1_rubric_dimensions": 8,
+      "stage_1_rubric_hash_sha256": "4bb4ba076baab4a08e044e89cb27197b21785e680607a77e0b0c2880ad46f507",
+      "stage_2_evidence_items": 8,
+      "stage_3_scores": 8,
+      "hedge_dimensions": [
+        "dim_6",
+        "dim_7"
+      ]
+    },
+    "reproducibility_note": "Same inputs + same backend + same model version + same rubric_hash should produce scores within \u00b11 point. A rubric_hash diff between runs means the measuring stick itself changed \u2014 scores are not directly comparable."
+  }
+}

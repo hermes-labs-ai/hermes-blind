@@ -1,0 +1,9 @@
+$ python -c "from hermes_blind import wrap; print(wrap('Score this paper on novelty 0-10.'))"
+
+[HERMES-BLIND]
+If you have prior exposure to this target or its author, state it in one line.
+Score using only quoted evidence from the target text below.
+Unknown or thin evidence = hedge; do not confabulate.
+[/HERMES-BLIND]
+
+Score this paper on novelty 0-10.

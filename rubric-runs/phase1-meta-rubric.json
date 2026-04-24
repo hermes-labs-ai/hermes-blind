@@ -1,0 +1,460 @@
+{
+  "rubric": {
+    "rubric_intent": "Evaluate the soundness, backend-agnosticism, and empirical falsifiability of a debias-scaffold (HERMES-BLIND) design plan.",
+    "target_type": "design-plan",
+    "dimensions": [
+      {
+        "id": "dim_1",
+        "name": "Backend Abstraction",
+        "description": "Measures the degree to which the design explicitly isolates components from backend-specific implementation details.",
+        "evidence_instructions": "Examine the design document for descriptions of modularity and interfaces; identify sections outlining backend dependencies and how they are abstracted; check for the use of dependency injection or similar patterns.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_2",
+        "name": "Falsifiability Strategy",
+        "description": "Assesses the clarity and feasibility of the proposed strategies for empirically testing and potentially disproving the design\u2019s claims.",
+        "evidence_instructions": "Locate the section detailing evaluation methodologies; identify specific, testable hypotheses related to debiasing; analyze the proposed metrics and experimental setup for potential biases or limitations.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_3",
+        "name": "Debiasing Technique Specificity",
+        "description": "Evaluates how specifically the debiasing techniques are described, including data preprocessing, model adjustments, and output filtering.",
+        "evidence_instructions": "Search for detailed explanations of debiasing strategies, including specific algorithms, parameter choices, and rationales; identify potential failure modes and mitigation plans.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_4",
+        "name": "Error Handling & Edge Cases",
+        "description": "Measures the design\u2019s consideration of potential error conditions and edge cases, especially those related to biased data or unexpected inputs.",
+        "evidence_instructions": "Look for sections describing error handling procedures; identify anticipated edge cases (e.g., zero-shot prompts, adversarial examples); assess the design\u2019s response to potential failures or unexpected results.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_5",
+        "name": "Modularity & Testability",
+        "description": "Assesses the degree to which the design is broken down into independent, testable modules.",
+        "evidence_instructions": "Examine the design document for descriptions of modular components and their interactions; identify clear interfaces between modules; look for descriptions of unit testing and integration testing strategies.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_6",
+        "name": "Reproducibility Reporting",
+        "description": "Evaluates the plan's provision for detailed, auditable reproducibility receipts documenting the entire design, training, and evaluation process.",
+        "evidence_instructions": "Check for dedicated sections outlining the reproducibility report format, including specifics on data hashes, prompt versions, and backend environments.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_7",
+        "name": "Scalability Considerations",
+        "description": "Measures how well the design addresses potential scalability challenges arising from increased data volume, complexity, or user load (hedge: true).",
+        "evidence_instructions": "Look for mentions of scalability, including how data preprocessing, model training, and inference will be handled at scale; assess the design's anticipated resource requirements and potential bottlenecks.",
+        "weight": 1,
+        "hedge": true
+      }
+    ]
+  },
+  "evidence_citations": [
+    {
+      "dim_id": "dim_1",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "prepend to every backend call in `backends.py`",
+          "location": "Integration points",
+          "source_class": "doc"
+        },
+        {
+          "quote": "add as a fourth rule in the polished system prompt",
+          "location": "Integration points",
+          "source_class": "doc"
+        },
+        {
+          "quote": "the scaffold's effect should be visible in the disclosed \"prior exposure\" line so reviewers can inspect what the model \"knew\"",
+          "location": "Success criteria (what makes this plan good)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "prepend as a string, no API changes needed",
+          "location": "Success criteria (what makes this plan good)",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The document outlines specific integration points for the 'hermes-blind' scaffold, detailing how it should be applied to different backends, including within `backends.py` and `rolitwin` integration. It specifies that the implementation requires no API changes and that the scaffold\u2019s impact should be readily visible in the model's output.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 4,
+        "other": 0
+      },
+      "dim_name": "Backend Abstraction"
+    },
+    {
+      "dim_id": "dim_2",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "A short (~40-token) language scaffold, prepended to any scoring prompt, can reduce all four biases by forcing: Disclosure of prior exposure...",
+          "location": "Hypothesis",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Score using only quoted evidence from the target text below.",
+          "location": "Draft scaffold \u2014 HERMES-BLIND v1",
+          "source_class": "doc"
+        },
+        {
+          "quote": "variance reduction \u226530% AND cross-model std \u22641.0 AND signal correlation preserved within \u00b10.1",
+          "location": "Success criteria (what makes this plan good)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "1. Use the 4-paper `applied/` corpus in hermes-rubric as target set\n2. Score each paper 5x with BLIND + 5x without, on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}",
+          "location": "Test protocol (Phase 4 in the meta-plan)",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The design proposes a scaffold to reduce bias by mandating disclosure, evidence-gating, hedging, and output shape discipline.  The plan outlines specific, measurable criteria for success (variance reduction, convergence, signal preservation) and includes a concrete test protocol using a defined corpus and multiple LLMs to validate the effectiveness of the scaffold.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 4,
+        "other": 0
+      },
+      "dim_name": "Falsifiability Strategy"
+    },
+    {
+      "dim_id": "dim_3",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Score using only quoted evidence from the target text below.",
+          "location": "## Draft scaffold \u2014 HERMES-BLIND v1",
+          "source_class": "doc"
+        },
+        {
+          "quote": "hedging on thin evidence",
+          "location": "evidence selection stage itself can be biased",
+          "source_class": "doc"
+        },
+        {
+          "quote": "evidence-gate makes prior-derived claims inadmissible independent of disclosure.",
+          "location": "## Known failure modes to design against",
+          "source_class": "doc"
+        },
+        {
+          "quote": "hedge only on thin evidence, not by default.",
+          "location": "## Known failure modes to design against",
+          "source_class": "doc"
+        },
+        {
+          "quote": "scaffold must be intent-agnostic (no domain-specific language; works identically for any target).",
+          "location": "## Known failure modes to design against",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The design explicitly details several debiasing techniques, including evidence-gating (only using quoted text), hedging based on thin evidence, and ensuring the scaffold is intent-agnostic to prevent signal contamination.  The document also outlines mitigation strategies to ensure these techniques function as intended.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 5,
+        "other": 0
+      },
+      "dim_name": "Debiasing Technique Specificity"
+    },
+    {
+      "dim_id": "dim_4",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "force a structural output (\"state in one line\") so non-compliance is visible.",
+          "location": "Known failure modes to design against",
+          "source_class": "doc"
+        },
+        {
+          "quote": "evidence-gate makes prior-derived claims inadmissible independent of disclosure.",
+          "location": "Known failure modes to design against",
+          "source_class": "doc"
+        },
+        {
+          "quote": "hedge only on thin evidence, not by default.",
+          "location": "Known failure modes to design against",
+          "source_class": "doc"
+        },
+        {
+          "quote": "scaffold must be intent-agnostic (no domain-specific language; works identically for any target).",
+          "location": "Known failure modes to design against",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The design explicitly anticipates several failure modes related to bias and unexpected model behavior, outlining mitigation strategies that involve structural output constraints, evidence gating, controlled hedging, and scaffold intent-agnosticism to ensure robust error handling and edge case management.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 4,
+        "other": 0
+      },
+      "dim_name": "Error Handling & Edge Cases"
+    },
+    {
+      "dim_id": "dim_5",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "prepend to every backend call in `backends.py`",
+          "location": "Integration points",
+          "source_class": "doc"
+        },
+        {
+          "quote": "add as a fourth rule in the polished system prompt",
+          "location": "Integration points",
+          "source_class": "doc"
+        },
+        {
+          "quote": "reduce score variance on repeated runs of the same target by \u226530%",
+          "location": "Success criteria (what makes this plan good)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Improve cross-model score convergence (std across backends \u22641.0 on a 0-10 scale for the same target)",
+          "location": "Success criteria (what makes this plan good)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "the scaffold's effect should be visible in the disclosed \"prior exposure\" line",
+          "location": "Success criteria (what makes this plan good)",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The design explicitly details integration points for the `hermes-blind` scaffold within existing infrastructure (`backends.py`, `rolitwin`) and outlines concrete success criteria including variance reduction, convergence, and auditability via disclosure of 'prior exposure'.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 5,
+        "other": 0
+      },
+      "dim_name": "Modularity & Testability"
+    },
+    {
+      "dim_id": "dim_6",
+      "evidence_found": true,
+      "confidence": "medium",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "the scaffold\u2019s effect should be visible in the disclosed \"prior exposure\" line so reviewers can inspect what the model \"knew\"",
+          "location": "Success criteria (what makes this plan good)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Test protocol (Phase 4 in the meta-plan)\n1. Use the 4-paper `applied/` corpus in hermes-rubric as target set\n2. Score each paper 5x with BLIND + 5x without, on each of {Opus, Sonnet, Haiku, qwen3.5:9b via Ollama}",
+          "location": "Test protocol (Phase 4 in the meta-plan)",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The plan explicitly states the need for visibility into the model's 'prior exposure' through the scaffold and outlines a test protocol that includes scoring with and without the scaffold across multiple models to assess its effect.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 2,
+        "other": 0
+      },
+      "dim_name": "Reproducibility Reporting"
+    },
+    {
+      "dim_id": "Scalability Considerations",
+      "evidence_found": true,
+      "confidence": "medium",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Be ~40 tokens or less (negligible per-call cost; wraps at scale)",
+          "location": "Success criteria (what makes this plan good)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Total: 4 papers \u00d7 2 conditions \u00d7 5 runs \u00d7 4 models = 160 scoring runs.",
+          "location": "Test protocol (Phase 4 in the meta-plan)",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The design explicitly mentions that the scaffold's token count is a key consideration for scalability, aiming for a 'negligible per-call cost' by keeping it under 40 tokens.  The planned test protocol also outlines a significant number (160) of scoring runs which implies considerations for managing the computational load associated with large-scale testing.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 2,
+        "other": 0
+      },
+      "dim_name": "Scalability Considerations"
+    }
+  ],
+  "per_dim_scores": [
+    {
+      "dim_id": "dim_1",
+      "dim_name": "Backend Abstraction",
+      "score": 6,
+      "score_rationale": "The design mentions specific integration points within backend files (`backends.py`, `rolitwin`), suggesting the abstraction isn't fully complete but is rather a layered approach with explicit backend integration. However, the requirement of no API changes and visible impact in model output indicates an attempt to minimize backend dependencies and observable alterations.",
+      "evidence_drove_score": "prepend to every backend call in `backends.py` [Integration points]",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_2",
+      "dim_name": "Falsifiability Strategy",
+      "score": 6,
+      "score_rationale": "The design proposes specific, measurable criteria for success (variance reduction, convergence, signal preservation) and a concrete test protocol involving a defined corpus and multiple LLMs. This demonstrates a clear and feasible approach to empirically testing and potentially disproving the design's claims. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "\u201cvariance reduction \u226530% AND cross-model std \u22641.0 AND signal correlation preserved within \u00b10.1\u201d [Success criteria (what makes this plan good)]",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_3",
+      "dim_name": "Debiasing Technique Specificity",
+      "score": 6,
+      "score_rationale": "The document provides explicit details on several debiasing techniques including evidence-gating, hedging, and ensuring intent-agnosticism, with outlined mitigation strategies. The level of detail provided suggests a well-considered and specific approach. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "The design explicitly details several debiasing techniques, including evidence-gating (only using quoted text), hedging based on thin evidence, and ensuring the scaffold is intent-agnostic to prevent signal contamination.  The document also outlines mitigation strategies to ensure these techniques function as intended.",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_4",
+      "dim_name": "Error Handling & Edge Cases",
+      "score": 6,
+      "score_rationale": "The design proactively addresses multiple failure modes related to bias and unexpected model behavior using specific techniques like structural output constraints, evidence gating, and intent-agnostic scaffolding. This demonstrates a strong focus on robust error handling and edge case management. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "The design explicitly anticipates several failure modes related to bias and unexpected model behavior, outlining mitigation strategies that involve structural output constraints, evidence gating, controlled hedging, and scaffold intent-agnosticism to ensure robust error handling and edge case management.",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_5",
+      "dim_name": "Modularity & Testability",
+      "score": 6,
+      "score_rationale": "The design demonstrates modularity by explicitly detailing integration points within existing infrastructure (`backends.py`, `rolitwin`) and providing specific, measurable success criteria. While integration points are clear, the level of independent testability isn't explicitly discussed, preventing a higher score. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "prepend to every backend call in `backends.py` [Integration points]",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_6",
+      "dim_name": "Reproducibility Reporting",
+      "score": 6,
+      "score_rationale": "The plan outlines a test protocol involving scoring with and without a scaffold across multiple models, and aims for visibility into prior exposure. This demonstrates a commitment to allowing review of the model's knowledge, contributing to reproducibility, though detail on specific documentation beyond this isn't evident.",
+      "evidence_drove_score": "\u201cthe scaffold\u2019s effect should be visible in the disclosed \"prior exposure\" line so reviewers can inspect what the model \"knew\"",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "Scalability Considerations",
+      "dim_name": "Scalability Considerations",
+      "score": 6,
+      "score_rationale": "The design explicitly addresses scalability by targeting a low token count per call and the test protocol plans for a substantial number of runs, suggesting attention to computational load. While the design doesn't detail a comprehensive scalability strategy, these aspects demonstrate initial considerations. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "Be ~40 tokens or less (negligible per-call cost; wraps at scale)",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    }
+  ],
+  "aggregate": 6.0,
+  "max_possible": 10.0,
+  "hedge_dims": [],
+  "hedge_note": "All dimensions had sufficient evidence.",
+  "dim_summaries": [
+    {
+      "dim_id": "dim_1",
+      "name": "Backend Abstraction",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_2",
+      "name": "Falsifiability Strategy",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_3",
+      "name": "Debiasing Technique Specificity",
+      "score": 6,
+      "weight": 2,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_4",
+      "name": "Error Handling & Edge Cases",
+      "score": 6,
+      "weight": 2,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_5",
+      "name": "Modularity & Testability",
+      "score": 6,
+      "weight": 2,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_6",
+      "name": "Reproducibility Reporting",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    }
+  ],
+  "receipt": {
+    "receipt_version": "1.1",
+    "timestamp_utc": "2026-04-24T21:00:43.765981+00:00",
+    "tool_version": "hermes-rubric 0.1.1",
+    "python_version": "3.14.3",
+    "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+    "backend": "ollama-local",
+    "inputs": {
+      "intent": "evaluate whether this design plan for a debias-scaffold (HERMES-BLIND) is sound, backend-agnostic, and empirically falsifiable",
+      "context_path": "/Users/rbr_lpci/Documents/projects/hermes-rubric/INTENT.md",
+      "target_path": "/Users/rbr_lpci/Documents/projects/hermes-blind/PLAN-v1.md",
+      "target_hash_sha256": "eb69574e22451499",
+      "context_hash_sha256": "502e10bacdc5b7f8",
+      "target_length_chars": 5350,
+      "context_length_chars": 1768
+    },
+    "pipeline": {
+      "stage_1_rubric_dimensions": 7,
+      "stage_1_rubric_hash_sha256": "8d6bf8c4cd367c5661cde1fce2fa89c7d03fe73c03b4e1dcd63147c974e22f12",
+      "stage_2_evidence_items": 7,
+      "stage_3_scores": 7,
+      "hedge_dimensions": []
+    },
+    "reproducibility_note": "Same inputs + same backend + same model version + same rubric_hash should produce scores within \u00b11 point. A rubric_hash diff between runs means the measuring stick itself changed \u2014 scores are not directly comparable."
+  }
+}

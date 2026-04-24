@@ -1,0 +1,554 @@
+{
+  "rubric": {
+    "rubric_intent": "Evaluate whether the HERMES-BLIND debias-scaffold design plan is sound, backend-agnostic, and empirically falsifiable.",
+    "target_type": "design-plan",
+    "dimensions": [
+      {
+        "id": "dim_1",
+        "name": "Bias Mechanism Specificity",
+        "description": "Whether the plan names the specific bias(es) it debiases and the causal mechanism by which the scaffold is expected to reduce them.",
+        "evidence_instructions": "Look in the plan for an explicit list of target biases (e.g. anchoring, sycophancy, authority-gradient) and a stated mechanism linking scaffold step \u2192 bias reduction. Cite section/line. Generic 'reduces bias' language without a named mechanism is weak.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_2",
+        "name": "Backend Agnosticism",
+        "description": "Whether the design avoids coupling to any single model/provider and specifies a backend-detection or abstraction layer consistent with hermes-rubric's claude-cli \u2192 ollama-local priority.",
+        "evidence_instructions": "Search the plan for backend abstraction, auto-detection order, or interface boundaries. Flag any hardcoded provider calls, API-key requirements, or prompt formats that only work on one model family. Cite file:line or section heading.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_3",
+        "name": "Falsification Criteria",
+        "description": "Whether the plan defines a pre-registered, measurable condition under which HERMES-BLIND would be declared a failure (effect size threshold, null result definition, stopping rule).",
+        "evidence_instructions": "Look for explicit pass/fail thresholds, effect-size targets, or 'we will reject the scaffold if X' statements. A plan that only describes success cases fails this dimension. Cite the falsification clause.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_4",
+        "name": "Baseline & Control Design",
+        "description": "Whether the experimental design includes a no-scaffold baseline and at least one active control (e.g. placebo scaffold) to isolate the debias effect from generic prompt-length or compute effects.",
+        "evidence_instructions": "Find the experiment section. Verify at minimum: (a) baseline condition, (b) active/placebo control, (c) matched token budgets across arms. Cite the design table or paragraph.",
+        "weight": 3,
+        "hedge": false
+      },
+      {
+        "id": "dim_5",
+        "name": "Evaluation Dataset Validity",
+        "description": "Whether the chosen evaluation set actually elicits the target bias in the baseline condition, with a stated base-rate of the bias in unscaffolded models.",
+        "evidence_instructions": "Look for dataset name, item count, and a reported or cited baseline bias rate. Reject claims like 'we'll use a benchmark' without naming it or showing the bias is present at baseline. Cite dataset reference.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_6",
+        "name": "Measurement Operationalization",
+        "description": "Whether 'debiased' is operationalized as a concrete, computable metric (e.g. delta accuracy on counter-stereotypical items, TE score, calibration shift) rather than a qualitative judgment.",
+        "evidence_instructions": "Locate the metric definition. Confirm it is computable from model outputs without human-in-the-loop scoring, or that inter-rater reliability is specified if human scoring is used. Cite metric formula or definition.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_7",
+        "name": "Reproducibility Artifacts",
+        "description": "Whether the plan commits to releasing prompts, seeds, data hashes, backend version, and a receipt sufficient to re-run the evaluation, consistent with hermes-rubric's reproducibility receipt model.",
+        "evidence_instructions": "Search for sections on artifacts, receipts, seeds, hashes, or release commitments. A plan that produces only aggregate numbers without a reproducibility manifest fails. Cite the artifact list.",
+        "weight": 2,
+        "hedge": false
+      },
+      {
+        "id": "dim_8",
+        "name": "Cross-Model Generalization Test",
+        "description": "Whether the plan tests the scaffold on at least two model families to demonstrate that any debias effect is not an artifact of a single backend's quirks.",
+        "evidence_instructions": "Look for a multi-model evaluation table or stated intent to run on \u22652 families (e.g. Claude + a local Qwen/Llama). Single-model evaluations score low here. Cite the model list.",
+        "weight": 2,
+        "hedge": true
+      }
+    ]
+  },
+  "evidence_citations": [
+    {
+      "dim_id": "dim_1",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "1. Self-scoring bias 2. User-preference bias 3. Session-context carryover 4. Prior-position commitment",
+          "location": "Problem section, enumerated list of four bias sources",
+          "source_class": "doc"
+        },
+        {
+          "quote": "a short (~40-token) language scaffold... can reduce all four biases by forcing disclosure, evidence-gating, hedging license, and output-shape discipline",
+          "location": "Hypothesis section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "If you have prior exposure to this target or its author, state it in one line. Score using only quoted evidence... Unknown or thin evidence = hedge",
+          "location": "Draft scaffold \u2014 HERMES-BLIND v1",
+          "source_class": "doc"
+        },
+        {
+          "quote": "BLIND addresses the selection stage, not the citation stage",
+          "location": "Why a new tool \u2014 'Why not just trust hermes-rubric's evidence requirement?'",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "Plan names four specific biases (self-scoring, user-preference, session-context carryover, prior-position commitment) and links each scaffold step to a mechanism: disclosure line targets prior exposure/self-scoring, evidence-quoting gate targets biased selection, hedge license counters commitment-consistency, output-shape discipline counters motivated reasoning. Mechanism is explicit, not generic 'reduces bias' language.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 4,
+        "other": 0
+      },
+      "dim_name": "Bias Mechanism Specificity"
+    },
+    {
+      "dim_id": "dim_2",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Backend-specific; only works when the scorer is in a claude-cli subprocess. Fails for Ollama, in-session scoring, or any other LLM backend. Scaffolds are backend-agnostic.",
+          "location": "Why a new tool (novelty justification \u2014 v2 addition)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "4 papers \u00d7 5 runs \u00d7 4 backends = 80 runs per variant",
+          "location": "Ablation plan",
+          "source_class": "doc"
+        },
+        {
+          "quote": "each LLM call uses a fixed seed where the backend supports it (Ollama yes, claude-cli no ... For claude-cli runs, we report the per-run variance as a band",
+          "location": "Reproducibility artifacts \u2192 Random seed policy",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Experiment log records hermes-rubric.__version__ and the model identifier reported by each backend (claude returns its model id; ollama returns the model tag).",
+          "location": "Reproducibility artifacts \u2192 Version pinning",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Model identifiers at time of v2 run: Opus 4.7 ... Sonnet 4.6 ... Haiku 4.5 ... qwen3.5:9b.",
+          "location": "Reproducibility artifacts",
+          "source_class": "doc"
+        },
+        {
+          "quote": "std dev of aggregate scores across the four backends on the same target is \u22641.0",
+          "location": "Success criteria #2 (Cross-model convergence)",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The plan explicitly frames backend-agnosticism as a core motivation (contrasting scaffolds vs. claude --bare which is claude-cli-only) and operationalizes it by running the ablation across four backends (Opus, Sonnet, Haiku, Ollama qwen3.5:9b), with cross-backend std-dev as a falsifiable success criterion and per-backend handling of seed/model-id differences. No hardcoded single-provider call or API-key requirement is specified; however, the plan describes design intent rather than showing a concrete abstraction-layer interface in code.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 6,
+        "other": 0
+      },
+      "dim_name": "Backend Agnosticism"
+    },
+    {
+      "dim_id": "dim_3",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Variance reduction: within-model variance on the same target across 5 runs drops by \u226530% with scaffold vs. without.",
+          "location": "Success criteria \u2014 falsifiable pass/fail, item 1",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Cross-model convergence: std dev of aggregate scores across the four backends on the same target is \u22641.0 (on a 0-10 scale) with scaffold.",
+          "location": "Success criteria, item 2",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Signal preservation: Spearman rank correlation between BLIND-scored rankings and no-BLIND rankings of the 6 papers is \u22650.7. If lower, BLIND is flattening signal",
+          "location": "Success criteria, item 3",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "Plan includes a section explicitly titled 'falsifiable pass/fail' with three pre-registered numeric thresholds (\u226530% variance reduction, \u22641.0 cross-backend std dev, \u22650.7 Spearman) and a stated failure interpretation if the signal-preservation threshold is not met.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 3,
+        "other": 0
+      },
+      "dim_name": "Falsification Criteria"
+    },
+    {
+      "dim_id": "dim_4",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "| `blind-null` | 0 | (baseline \u2014 no scaffold) |",
+          "location": "Ablation plan table \u2014 variant row",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Five scaffold lengths tested empirically to find the minimum-viable version",
+          "location": "Ablation plan (addresses hedged dim: Scaffold Minimality)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "blind-micro ~8 ... blind-short ~18 ... blind-v1 ~40 ... blind-full ~80",
+          "location": "Ablation plan variant table",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Each variant tested on all 4 papers \u00d7 5 runs \u00d7 4 backends = 80 runs per variant = 400 runs total.",
+          "location": "Ablation plan",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "Design includes an explicit no-scaffold baseline (`blind-null`, 0 tokens) and multiple active scaffold variants of varying token lengths (micro/short/v1/full) run on the same papers/backends, providing token-length controls to isolate scaffold effect from prompt-length/compute. No explicit non-BLIND placebo scaffold of matched length is described, but token-matched length sweep across active variants serves as the active control.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 4,
+        "other": 0
+      },
+      "dim_name": "Baseline & Control Design"
+    },
+    {
+      "dim_id": "dim_5",
+      "evidence_found": false,
+      "confidence": "low",
+      "hedge": true,
+      "citations": [
+        {
+          "quote": "the 4-paper `applied/` set from hermes-rubric, plus 2 adversarial targets (one deliberately weak paper, one high-quality paper)",
+          "location": "Reproducibility artifacts section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Each variant tested on all 4 papers \u00d7 5 runs \u00d7 4 backends = 80 runs per variant",
+          "location": "Ablation plan section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Fixture paths pinned in `tests/fixtures.yaml` with sha256 hashes.",
+          "location": "Reproducibility artifacts section",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The plan references a 6-paper fixture corpus (4 from hermes-rubric applied/ set + 2 adversarial) but does not name a standard evaluation dataset, give a citation, or report a baseline rate at which the four target biases (self-scoring, user-preference, session-carryover, prior-position) actually appear in unscaffolded scoring. No baseline bias prevalence is established before the intervention is tested.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 3,
+        "other": 0
+      },
+      "dim_name": "Evaluation Dataset Validity"
+    },
+    {
+      "dim_id": "dim_6",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "within-model variance on the same target across 5 runs drops by \u226530% with scaffold vs. without. Measured as std dev of aggregate scores.",
+          "location": "Success criteria #1",
+          "source_class": "doc"
+        },
+        {
+          "quote": "std dev of aggregate scores across the four backends on the same target is \u22641.0 (on a 0-10 scale) with scaffold.",
+          "location": "Success criteria #2 (Cross-model convergence)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Spearman rank correlation between BLIND-scored rankings and no-BLIND rankings of the 6 papers is \u22650.7.",
+          "location": "Success criteria #3 (Signal preservation)",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Output format: results.json with schema {variant, paper, run, backend, aggregate, hedge_dims, ...}. Computed derived metrics written to analysis.json: within-variant variance, cross-backend std, signal-preservation correlation against ground truth.",
+          "location": "Reproducibility artifacts section",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "'Debiased' is operationalized via three concrete computable metrics: \u226530% reduction in within-model std dev across 5 runs, cross-backend std dev \u22641.0 on a 0-10 scale, and Spearman rank correlation \u22650.7 for signal preservation. All are computable from aggregate scores in results.json without human scoring.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 4,
+        "other": 0
+      },
+      "dim_name": "Measurement Operationalization"
+    },
+    {
+      "dim_id": "dim_7",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Reproducibility artifacts (addresses hedged dim: Reproducibility)",
+          "location": "Reproducibility artifacts section header",
+          "source_class": "doc"
+        },
+        {
+          "quote": "single Python script `tests/experiment_blind_ablation.py`. Checked into the repo. Runs the full ablation with one command",
+          "location": "Reproducibility artifacts > Test harness",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Fixture paths pinned in `tests/fixtures.yaml` with sha256 hashes.",
+          "location": "Reproducibility artifacts > Fixture corpus",
+          "source_class": "doc"
+        },
+        {
+          "quote": "each LLM call uses a fixed seed where the backend supports it (Ollama yes, claude-cli no... we report the per-run variance as a band",
+          "location": "Reproducibility artifacts > Random seed policy",
+          "source_class": "doc"
+        },
+        {
+          "quote": "`results.json` with schema `{variant, paper, run, backend, aggregate, hedge_dims, timestamp, cost_estimate}`",
+          "location": "Reproducibility artifacts > Output format",
+          "source_class": "doc"
+        },
+        {
+          "quote": "`pyproject.toml` pins `hermes-rubric>=0.1.1`. Experiment log records `hermes-rubric.__version__` and the model identifier reported by each backend",
+          "location": "Reproducibility artifacts > Version pinning",
+          "source_class": "doc"
+        },
+        {
+          "quote": "Model identifiers at time of v2 run: Opus 4.7 (claude-opus-4-7), Sonnet 4.6 (claude-sonnet-4-6), Haiku 4.5 (claude-haiku-4-5-20251001), qwen3.5:9b.",
+          "location": "Reproducibility artifacts > Model identifiers",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "The plan dedicates an explicit 'Reproducibility artifacts' section committing to a checked-in test harness, a pinned fixture corpus with sha256 hashes, a stated seed policy (with honest disclosure of claude-cli's seed limitation), a defined results.json schema with derived analysis.json, version pinning of hermes-rubric, and recorded model identifiers per backend.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 7,
+        "other": 0
+      },
+      "dim_name": "Reproducibility Artifacts"
+    },
+    {
+      "dim_id": "dim_8",
+      "evidence_found": true,
+      "confidence": "high",
+      "hedge": false,
+      "citations": [
+        {
+          "quote": "Model identifiers at time of v2 run: Opus 4.7 (claude-opus-4-7), Sonnet 4.6 (claude-sonnet-4-6), Haiku 4.5 (claude-haiku-4-5-20251001), qwen3.5:9b.",
+          "location": "Reproducibility artifacts section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "4 papers \u00d7 5 runs \u00d7 4 backends = 80 runs per variant",
+          "location": "Ablation plan section",
+          "source_class": "doc"
+        },
+        {
+          "quote": "std dev of aggregate scores across the four backends on the same target is \u22641.0",
+          "location": "Success criteria #2 (Cross-model convergence)",
+          "source_class": "doc"
+        }
+      ],
+      "evidence_summary": "Plan explicitly enumerates four backends spanning two model families \u2014 Anthropic Claude (Opus 4.7, Sonnet 4.6, Haiku 4.5) and local Qwen (qwen3.5:9b) \u2014 and bakes cross-backend convergence into both the run matrix (4 backends \u00d7 4 papers \u00d7 5 runs) and a falsifiable success criterion.",
+      "source_class_mix": {
+        "code": 0,
+        "test": 0,
+        "config": 0,
+        "readme": 0,
+        "doc": 3,
+        "other": 0
+      },
+      "dim_name": "Cross-Model Generalization Test"
+    }
+  ],
+  "per_dim_scores": [
+    {
+      "dim_id": "dim_1",
+      "dim_name": "Bias Mechanism Specificity",
+      "score": 6,
+      "score_rationale": "The plan enumerates four specific biases and maps each to a distinct scaffold mechanism (disclosure, evidence-gating, hedge license, output-shape discipline), going well beyond generic 'reduces bias' language. It also distinguishes BLIND's selection-stage target from hermes-rubric's citation-stage role, showing precise causal scoping. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "'a short (~40-token) language scaffold... can reduce all four biases by forcing disclosure, evidence-gating, hedging license, and output-shape discipline' [Hypothesis section]",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_2",
+      "dim_name": "Backend Agnosticism",
+      "score": 6,
+      "score_rationale": "Backend-agnosticism is a stated core motivation and is operationalized concretely: ablation runs across four backends (Opus/Sonnet/Haiku/Ollama qwen3.5:9b), per-backend seed handling, model-id captured from whichever backend reports it, and cross-backend std-dev \u22641.0 as a falsifiable success criterion. Held below 10 because the plan describes design intent and run matrix rather than exhibiting a concrete abstraction-layer interface in code. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "'Backend-specific; only works when the scorer is in a claude-cli subprocess. Fails for Ollama, in-session scoring, or any other LLM backend. Scaffolds are backend-agnostic.' combined with '4 papers \u00d7 5 runs \u00d7 4 backends = 80 runs per variant' and 'std dev of aggregate scores across the four backends on the same target is \u22641.0'",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_3",
+      "dim_name": "Falsification Criteria",
+      "score": 6,
+      "score_rationale": "The plan pre-registers three explicit numeric thresholds (\u226530% variance reduction, \u22641.0 cross-backend std dev, \u22650.7 Spearman) under a 'falsifiable pass/fail' section, with a stated failure interpretation for signal preservation ('If lower, BLIND is flattening signal'). This is exemplary pre-registration; minor deduction for no explicit stopping rule or sample-size justification mentioned. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "Success criteria \u2014 falsifiable pass/fail, items 1-3, including 'If lower, BLIND is flattening signal'",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_4",
+      "dim_name": "Baseline & Control Design",
+      "score": 6,
+      "score_rationale": "Explicit no-scaffold baseline (`blind-null`, 0 tokens) is present and a token-length sweep across active variants (micro/short/v1/full at ~8/18/40/80 tokens) provides a length/compute control on identical papers\u00d7runs\u00d7backends. Loses points because no non-BLIND placebo scaffold of matched length is described, so content-vs-length confound is only partially isolated. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "| `blind-null` | 0 | (baseline \u2014 no scaffold) | ... blind-micro ~8 ... blind-short ~18 ... blind-v1 ~40 ... blind-full ~80",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_5",
+      "dim_name": "Evaluation Dataset Validity",
+      "score": 3,
+      "score_rationale": "Evidence shows a pinned 6-paper fixture corpus exists (sha256-hashed in tests/fixtures.yaml), which gives minimal reproducibility credit, but no standard evaluation dataset is named, no citation is given, and crucially no baseline prevalence of the four target biases is established in unscaffolded scoring \u2014 so the eval cannot demonstrate it actually elicits the target bias.",
+      "evidence_drove_score": "'the 4-paper applied/ set from hermes-rubric, plus 2 adversarial targets' with no stated base-rate of the four biases in unscaffolded scoring",
+      "hedge_applied": true,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_6",
+      "dim_name": "Measurement Operationalization",
+      "score": 6,
+      "score_rationale": "Three concrete, computable metrics with explicit numeric thresholds (\u226530% std-dev reduction, cross-backend std \u22641.0, Spearman \u22650.7) plus a specified results.json/analysis.json schema make 'debiased' fully operational with no qualitative judgment required. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "within-model variance ... drops by \u226530% ... std dev \u22641.0 ... Spearman rank correlation \u22650.7 ... Computed derived metrics written to analysis.json: within-variant variance, cross-backend std, signal-preservation correlation",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_7",
+      "dim_name": "Reproducibility Artifacts",
+      "score": 6,
+      "score_rationale": "Evidence shows a dedicated reproducibility section covering all canonical artifacts: checked-in harness, sha256-pinned fixtures, explicit seed policy with honest backend limitation disclosure, defined results.json schema, version pinning of hermes-rubric, and recorded per-backend model identifiers. Falls just short of 10 because seed control is acknowledged as incomplete for claude-cli (mitigated by variance bands rather than full determinism). [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "'Fixture paths pinned in tests/fixtures.yaml with sha256 hashes' + 'pyproject.toml pins hermes-rubric>=0.1.1. Experiment log records hermes-rubric.__version__ and the model identifier reported by each backend' + explicit seed-limitation disclosure for claude-cli",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    },
+    {
+      "dim_id": "dim_8",
+      "dim_name": "Cross-Model Generalization Test",
+      "score": 6,
+      "score_rationale": "Plan tests two distinct model families (Anthropic Claude and local Qwen) across four backends, with cross-backend convergence baked into both the run matrix (4\u00d74\u00d75=80 runs/variant) and a falsifiable success criterion (std dev \u22641.0 across backends). [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "evidence_drove_score": "'std dev of aggregate scores across the four backends on the same target is \u22641.0' [Success criteria #2 (Cross-model convergence)]",
+      "hedge_applied": false,
+      "citation_source_weight": 0.7
+    }
+  ],
+  "aggregate": 5.7,
+  "max_possible": 10.0,
+  "hedge_dims": [
+    "Evaluation Dataset Validity",
+    "Cross-Model Generalization Test"
+  ],
+  "hedge_note": "2 dimension(s) had thin evidence \u2014 scores for these are less reliable: Evaluation Dataset Validity, Cross-Model Generalization Test",
+  "dim_summaries": [
+    {
+      "dim_id": "dim_1",
+      "name": "Bias Mechanism Specificity",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_2",
+      "name": "Backend Agnosticism",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_3",
+      "name": "Falsification Criteria",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_4",
+      "name": "Baseline & Control Design",
+      "score": 6,
+      "weight": 3,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_5",
+      "name": "Evaluation Dataset Validity",
+      "score": 3,
+      "weight": 2,
+      "hedge": true
+    },
+    {
+      "dim_id": "dim_6",
+      "name": "Measurement Operationalization",
+      "score": 6,
+      "weight": 2,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_7",
+      "name": "Reproducibility Artifacts",
+      "score": 6,
+      "weight": 2,
+      "hedge": false
+    },
+    {
+      "dim_id": "dim_8",
+      "name": "Cross-Model Generalization Test",
+      "score": 6,
+      "weight": 2,
+      "hedge": false
+    }
+  ],
+  "receipt": {
+    "receipt_version": "1.1",
+    "timestamp_utc": "2026-04-24T22:49:18.810455+00:00",
+    "tool_version": "hermes-rubric 0.1.1",
+    "python_version": "3.14.3",
+    "platform": "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+    "backend": "claude-cli-contextual",
+    "inputs": {
+      "intent": "evaluate whether this design plan for a debias-scaffold (HERMES-BLIND) is sound, backend-agnostic, and empirically falsifiable",
+      "context_path": "/Users/rbr_lpci/Documents/projects/hermes-rubric/INTENT.md",
+      "target_path": "/Users/rbr_lpci/Documents/projects/hermes-blind/PLAN-v2.md",
+      "target_hash_sha256": "a6ff18ce80543afc",
+      "context_hash_sha256": "502e10bacdc5b7f8",
+      "target_length_chars": 10110,
+      "context_length_chars": 1768
+    },
+    "pipeline": {
+      "stage_1_rubric_dimensions": 8,
+      "stage_1_rubric_hash_sha256": "9cfc0650faa6cb9dac3d229944cd39c72a0a42fe71b87111fa5831224ac86a0f",
+      "stage_2_evidence_items": 8,
+      "stage_3_scores": 8,
+      "hedge_dimensions": [
+        "dim_5"
+      ]
+    },
+    "reproducibility_note": "Same inputs + same backend + same model version + same rubric_hash should produce scores within \u00b11 point. A rubric_hash diff between runs means the measuring stick itself changed \u2014 scores are not directly comparable."
+  }
+}

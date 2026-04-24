@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.env
+.env.local
+.DS_Store
+build/
+dist/
+*.egg
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+# Audit artifacts kept in repo under rubric-runs/ — not gitignored
