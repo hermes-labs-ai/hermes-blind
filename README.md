@@ -1,21 +1,22 @@
 # hermes-blind
 
+**Context-compensation scaffold for LLM evaluation prompts.** A ~40-token language prefix that makes the model disclose prior exposure, score on quoted evidence only, and hedge on thin evidence — so the same prompt stops scoring 6.8 on one run and 8.4 on the next.
+
 [![PyPI](https://img.shields.io/pypi/v/hermes-blind.svg)](https://pypi.org/project/hermes-blind/)
 [![Python](https://img.shields.io/pypi/pyversions/hermes-blind.svg)](https://pypi.org/project/hermes-blind/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status: experimental](https://img.shields.io/badge/status-experimental-orange.svg)](#status)
+[![Hermes Seal](https://img.shields.io/badge/hermes--seal-manifest%20staged-blue)](.hermes-seal.yaml)
 
-**The same eval prompt should not score 6.8 on one run and 8.4 on the next.** Context, memory, and knowledge of authorship bias the scorer. `hermes-blind` is a ~40-token language scaffold you prepend to any scoring or evaluation prompt to force the model to disclose prior exposure, score on quoted evidence only, and hedge on thin evidence.
-
-It is a string. No model. No API. Backend-agnostic.
+If you're scoring with an LLM that has access to your CLAUDE.md, memory, or session transcript — and the eval is supposed to be neutral but you can feel the model flattering you — this is the string you prepend to the prompt.
 
 ## Pain
 
-- Same prompt, same target, different run → different score. No audit trail for which score is real.
-- Claude scoring code it just wrote. The model knows. The score is inflated.
-- CLAUDE.md, memory files, and session context leak into the rubric's judgment and the scorer optimizes to the owner's preferences instead of the target's evidence.
-- You want a second opinion, but the second opinion is the same model that has the same context.
-- `claude --bare` fixes this for the `claude-cli` backend only. Ollama, Sonnet-via-Bedrock, in-session scoring, and everyone else get nothing.
+- Same prompt, same target, two runs, two scores: 6.8 and 8.4. No way to tell which is real.
+- Claude scoring code Claude just wrote. The model knows it authored the target. The score is inflated and you can't measure by how much.
+- The scorer reads your `CLAUDE.md` and your memory files; it learns your preferences and grades to please you, not to surface evidence.
+- You wanted a second opinion. The second opinion is the same model with the same session context. It is not a second opinion.
+- `claude --bare` solves this for `claude-cli` only. Anything you score through Ollama, OpenAI, or any in-session call gets nothing.
 
 ## Install
 
