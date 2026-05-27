@@ -9,7 +9,7 @@ is small but not zero.
 
 ## Reporting a Vulnerability
 
-Email: **rbosch@lpci.ai** with subject line `[security] hermes-blind`.
+Email: **roli@hermes-labs.ai** with subject line `[security] hermes-blind`.
 
 Do not open public GitHub issues for security reports.
 

@@ -9,7 +9,7 @@ description = "Context-compensation scaffold for LLM evaluation prompts — disc
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-authors = [{ name = "Hermes Labs", email = "rbosch@lpci.ai" }]
+authors = [{ name = "Hermes Labs", email = "roli@hermes-labs.ai" }]
 keywords = ["llm", "prompt-engineering", "debiasing", "scaffold", "evaluation"]
 classifiers = [
     "Development Status :: 3 - Alpha",
