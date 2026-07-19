@@ -1,0 +1,3 @@
+include CHANGELOG.md
+include EVALUATION.md
+recursive-include evaluation *.json

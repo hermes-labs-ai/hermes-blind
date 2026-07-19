@@ -1,23 +1,49 @@
-"""hermes-blind — context-compensation scaffold for LLM evaluation prompts.
+"""Deterministic prompt and session-recovery scaffolds.
 
-Prepend a ~40-token language scaffold to any scoring/evaluation prompt to
-reduce four kinds of bias: self-scoring, user-preference, session-carryover,
-prior-position-commitment. Backend-agnostic; complements --bare mode.
+The wrap function prepends an evidence-gating scaffold to an evaluation
+prompt. build_recovery_scaffold (in hermes_blind.apply) extracts a compact
+turn-one anchor from Claude Code or Codex session JSONL.
 
-Usage:
-
-    from hermes_blind import wrap
-    prompt = wrap("Rate this paper 0-10...")
-
-    # With a named variant
-    prompt = wrap("...", variant="micro")
-
-    # Extract the disclosure line from the model's response
-    from hermes_blind import extract_disclosure
-    disclosure = extract_disclosure(model_response)
+The package is dependency-free and makes no model or network calls. Its
+mechanics are tested; behavioral claims such as bias reduction or successful
+drift recovery remain experimental.
 """
 
-from .scaffold import DEFAULT_VARIANT, VARIANTS, extract_disclosure, wrap
+from .preambles import (
+    INTENT_DEBIAS_PREAMBLE,
+    SCOPE_CHOICES,
+    SCOPE_PREAMBLES,
+    VALENCE_WORDS,
+    compose_intent,
+    detect_valence,
+    intent_debias,
+    scope_class_preamble,
+    wrap_intent_for_rubric,
+)
+from .scaffold import (
+    DEFAULT_VARIANT,
+    LENGTH_SWEEP_VARIANTS,
+    MECHANISM_VARIANTS,
+    VARIANTS,
+    extract_disclosure,
+    wrap,
+)
 
-__version__ = "0.0.6"
-__all__ = ["wrap", "extract_disclosure", "VARIANTS", "DEFAULT_VARIANT"]
+__version__ = "0.1.3"
+__all__ = [
+    "wrap",
+    "extract_disclosure",
+    "VARIANTS",
+    "DEFAULT_VARIANT",
+    "LENGTH_SWEEP_VARIANTS",
+    "MECHANISM_VARIANTS",
+    "intent_debias",
+    "scope_class_preamble",
+    "wrap_intent_for_rubric",
+    "compose_intent",
+    "detect_valence",
+    "INTENT_DEBIAS_PREAMBLE",
+    "SCOPE_PREAMBLES",
+    "SCOPE_CHOICES",
+    "VALENCE_WORDS",
+]

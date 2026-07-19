@@ -3,24 +3,24 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-04-24T16:00:00Z",
+    "timestamp": "2026-07-19T09:00:00Z",
     "tools": [
-      { "vendor": "Hermes Labs", "name": "hand-authored", "version": "0.0.6" }
+      { "vendor": "Hermes Labs", "name": "hand-authored", "version": "0.1.3" }
     ],
     "component": {
-      "bom-ref": "pkg:pypi/hermes-blind@0.0.6",
+      "bom-ref": "pkg:pypi/hermes-blind@0.1.3",
       "type": "library",
       "name": "hermes-blind",
-      "version": "0.0.6",
-      "description": "Context-compensation scaffold for LLM evaluation prompts",
+      "version": "0.1.3",
+      "description": "Deterministic prompt and session-recovery scaffolds for LLM workflows",
       "licenses": [{ "license": { "id": "MIT" } }],
-      "purl": "pkg:pypi/hermes-blind@0.0.6"
+      "purl": "pkg:pypi/hermes-blind@0.1.3"
     }
   },
   "components": [],
   "dependencies": [
     {
-      "ref": "pkg:pypi/hermes-blind@0.0.6",
+      "ref": "pkg:pypi/hermes-blind@0.1.3",
       "dependsOn": []
     }
   ]

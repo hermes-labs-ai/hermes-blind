@@ -3,8 +3,48 @@
 All notable changes to `hermes-blind` will be documented here.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Versioning: [SemVer](https://semver.org/) — deliberate 0.0.x pre-1.0 range
-signals experimental status until the Phase 4 empirical test passes.
+Versioning: [SemVer](https://semver.org/). The 0.x line remains experimental;
+minor versions may change the public surface before 1.0.
+
+## [0.1.3] — 2026-07-19
+
+0.1.3 is the first public 0.1.x release. The public comparison is
+**0.0.6 → 0.1.3**. Versions 0.1.0 through 0.1.2 were unpublished development
+candidates.
+
+### Added since public 0.0.6
+
+- A dependency-free CLI: `hermes-blind apply`.
+- Deterministic recovery-scaffold generation from Claude Code and Codex JSONL.
+- `goals`, `first-sentence`, and `full` anchor modes.
+- Intent-debias and target-scope preambles used by hermes-rubric.
+- `placebo` and `gate-only` mechanism-isolation variants.
+
+### Changed from the unpublished 0.1.2 candidate
+
+- Goal-set extraction replaces first-sentence truncation as the default.
+- Recovery output records the source filename instead of its absolute path.
+- Recovery output refuses to overwrite its input and preserves existing output
+  files unless `--force` is explicit.
+- Public docs and metadata now separate tested mechanics from unproven
+  behavioral efficacy.
+- Added a privacy-safe anchor-fidelity report with sanitized per-session
+  counts, statistical context, receipt commitments, and public synthetic
+  mechanics fixtures; the report and sanitized data ship in the source
+  distribution.
+- The public CLI excludes unfinished experiment and analysis harnesses tied to
+  sibling repositories.
+- Removed the staged placeholder seal; it is not a release requirement.
+
+### Evidence boundary
+
+- A frozen 66-goal audit represented 40 pre-listed goals with goal-set
+  extraction, versus 7 with the previous first-sentence heuristic: a 50.0
+  percentage-point increase, with improvement in 7 of 9 sessions and ties in
+  2. This supports substantially better mission representation in the
+  recovery artifact.
+- Bias reduction, downstream model adherence or task outcomes, automatic
+  drift detection, and optimal timing remain unproven.
 
 ## [0.0.6] — 2026-04-24
 

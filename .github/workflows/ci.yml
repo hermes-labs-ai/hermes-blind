@@ -39,5 +39,5 @@ jobs:
           /tmp/isolated/bin/python -c "from hermes_blind import wrap, extract_disclosure, VARIANTS; \
             assert 'HERMES-BLIND' in wrap('x'); \
             assert wrap('y', variant='null') == 'y'; \
-            assert set(VARIANTS) == {'null', 'micro', 'short', 'v1', 'full'}; \
+            assert {'null', 'micro', 'short', 'v1', 'full'} <= set(VARIANTS); \
             print('smoke ok')"

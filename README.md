@@ -1,22 +1,19 @@
 # hermes-blind
 
-**Context-compensation scaffold for LLM evaluation prompts.** A ~40-token language prefix that makes the model disclose prior exposure, score on quoted evidence only, and hedge on thin evidence — so the same prompt stops scoring 6.8 on one run and 8.4 on the next.
+**Deterministic prompt and session-recovery scaffolds for LLM workflows.**
 
 [![PyPI](https://img.shields.io/pypi/v/hermes-blind.svg)](https://pypi.org/project/hermes-blind/)
 [![Python](https://img.shields.io/pypi/pyversions/hermes-blind.svg)](https://pypi.org/project/hermes-blind/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Status: experimental](https://img.shields.io/badge/status-experimental-orange.svg)](#status)
-[![Hermes Seal](https://img.shields.io/badge/hermes--seal-manifest%20staged-blue)](.hermes-seal.yaml)
+[![Status: experimental](https://img.shields.io/badge/status-experimental-orange.svg)](#evidence-and-limits)
 
-If you're scoring with an LLM that has access to your CLAUDE.md, memory, or session transcript — and the eval is supposed to be neutral but you can feel the model flattering you — this is the string you prepend to the prompt.
+hermes-blind provides two small, standard-library-only primitives:
 
-## Pain
+1. prepend an evidence-gating scaffold to an evaluation prompt; and
+2. recover a compact turn-one goal anchor from a Claude Code or Codex session log.
 
-- Same prompt, same target, two runs, two scores: 6.8 and 8.4. No way to tell which is real.
-- Claude scoring code Claude just wrote. The model knows it authored the target. The score is inflated and you can't measure by how much.
-- The scorer reads your `CLAUDE.md` and your memory files; it learns your preferences and grades to please you, not to surface evidence.
-- You wanted a second opinion. The second opinion is the same model with the same session context. It is not a second opinion.
-- `claude --bare` solves this for `claude-cli` only. Anything you score through Ollama, OpenAI, or any in-session call gets nothing.
+It makes no model calls, sends no network requests, and does not claim to
+detect drift automatically.
 
 ## Install
 
@@ -24,111 +21,130 @@ If you're scoring with an LLM that has access to your CLAUDE.md, memory, or sess
 pip install hermes-blind
 ```
 
-Python 3.10+. No dependencies beyond the standard library.
+Python 3.10+.
 
-## Quickstart
+## Recover a long session
+
+```bash
+hermes-blind apply \
+  --session /path/to/rollout.jsonl \
+  --format auto \
+  --anchor-mode goals \
+  --turn 9 \
+  --out recovery.md
+```
+
+The default `goals` mode scans the first user turn for goal-carrying
+sentences and preserves up to 12 of them. Use `first-sentence` for the
+legacy compact behavior or `full` to include up to 4,000 characters.
+`--format auto` recognizes Claude Code and Codex JSONL shapes.
+
+The `--turn` value is output metadata. It is not an automatic trigger and
+does not imply that turn 9 is an empirically optimal intervention point.
+Existing output files are preserved unless `--force` is passed; the input
+session file can never be used as the output path.
+
+Recovery output includes user-authored text. It records only the session
+filename, not its absolute path, but you should still inspect the markdown
+before sharing it.
+
+## Wrap an evaluation prompt
 
 ```python
 from hermes_blind import wrap
 
-prompt = wrap("Rate this paper on novelty 0-10 with one sentence of rationale.")
-# pass `prompt` to any backend: anthropic, openai, ollama, whatever
+prompt = wrap(
+    "Rate this paper on novelty from 0 to 10 and cite the target text.",
+    variant="v1",
+)
 ```
 
-What `wrap()` produces:
+Or from the CLI:
 
-```text
-[HERMES-BLIND]
-If you have prior exposure to this target or its author, state it in one line.
-Score using only quoted evidence from the target text below.
-Unknown or thin evidence = hedge; do not confabulate.
-[/HERMES-BLIND]
-
-Rate this paper on novelty 0-10 with one sentence of rationale.
+```bash
+hermes-blind apply --variant v1 --prompt "Score this artifact from quoted evidence."
 ```
 
-Four mechanisms in that block:
+Available variants are `null`, `micro`, `short`, `v1`, `full`,
+`placebo`, and `gate-only`. The `null` variant is an exact no-op for
+controlled comparisons.
 
-1. **Disclosure ritual** — forcing the model to name its prior exposure in one line surfaces the bias to its own attention. Self-awareness of bias is a documented primary debiaser.
-2. **Evidence-gate** — "only quoted evidence from the target" disqualifies claims drawn from the model's priors.
-3. **Hedging license** — "unknown or thin evidence = hedge" removes the incentive to confabulate confident scores from memory.
-4. **Output-shape discipline** (in the `full` variant) — keeps the model inside the expected output format, where context-bleed usually surfaces in sidebars and reasoning chains.
+## Rubric framing helpers
 
-## Variants for ablation
+The package also exposes the dependency-free intent and scope preambles used
+by hermes-rubric:
 
 ```python
-from hermes_blind import wrap, VARIANTS
+from hermes_blind import compose_intent
 
-for name in VARIANTS:
-    print(name, "→", len(wrap("x", variant=name)))
+framed = compose_intent(
+    "Evaluate whether this release is ready.",
+    scope_class="results-bundle",
+    intent_debias=True,
+)
 ```
 
-| Variant | Tokens | Use case |
-|---|---|---|
-| `null` | 0 | Experimental control — the "without scaffold" baseline. |
-| `micro` | ~8 | Minimum viable — is any debiasing effect detectable? |
-| `short` | ~18 | Fits in tight token budgets. |
-| `v1` | ~40 | **Default.** The full four-mechanism scaffold. |
-| `full` | ~80 | Adds output-shape discipline + "prefer hedging over confident wrong". |
+## Evidence and limits
 
-The `null` variant is a no-op (returns the prompt unchanged). It exists so an ablation harness can flip a variant name instead of branching the caller.
+Validated mechanics for 0.1.3:
 
-## Extracting the disclosure line
+- deterministic prompt wrapping and disclosure parsing;
+- Claude Code and Codex JSONL parsing;
+- three recovery anchor modes;
+- prompt preservation and scaffold-family invariants;
+- package build, clean installation, CLI invocation, and unit tests.
 
-```python
-from hermes_blind import extract_disclosure
+A frozen 66-goal extraction audit found that goal-set extraction represented
+40 of 66 pre-listed goals, compared with 7 of 66 for the previous
+first-sentence heuristic: a 50.0 percentage-point increase, with improvement
+in 7 of 9 sessions and ties in 2. This demonstrates substantially better
+**mission representation in the generated recovery artifact**, a necessary
+first step for recovery. It does not establish that reinserting the artifact
+causes downstream model adherence or better task outcomes. See the
+[privacy-safe evaluation report](https://github.com/hermes-labs-ai/hermes-blind/blob/main/EVALUATION.md)
+for the method, sanitized
+per-session results, statistical context, limitations, and receipt hashes.
 
-response = model.complete(prompt).text
-disclosure = extract_disclosure(response)
-# disclosure is the string the model produced for "prior exposure", or None
+Public synthetic fixtures in `tests/test_apply.py` reproduce the parsing,
+extraction, safety, and output mechanics with fabricated Claude Code and Codex
+JSONL. They do not reproduce the private 40/66 audit.
+
+Not established:
+
+- reliable bias reduction from the evaluation prefix;
+- successful behavioral recovery after inserting a generated anchor;
+- automatic drift detection or an optimal intervention turn;
+- adversarial prompt-injection resistance;
+- non-English behavior.
+
+Earlier single-shot experiments did not establish the original bias-reduction
+hypothesis. A later multi-turn research harness remains internal and is not
+part of the public runtime because its efficacy study is incomplete.
+
+Treat the output as a transparent scaffold for a human or agent to inspect,
+not as a security boundary or independent evaluator.
+
+## Development
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+ruff check src tests
+pytest -q
+python -m build
+twine check dist/*
 ```
 
-A model that *never* discloses across many runs is a signal it's ignoring the scaffold. That's worth knowing; the empty result is itself data.
+## Version note
 
-## Status
-
-**v0.0.6 — experimental. Phase 2 of a 5-phase staged build.**
-
-What is validated:
-
-- The package installs, imports, and runs across Python 3.10-3.12.
-- All five variants preserve the caller's prompt at the tail.
-- Variants are length-ordered: `null < micro < short < v1 < full`.
-- `extract_disclosure()` handles the common response shapes and rejects non-disclosure text.
-- 19/19 unit tests pass (no LLM calls in the test suite; deterministic).
-
-What is **not yet validated**:
-
-- **Phase 4 empirical variance-reduction test has not been run.** The claim that this scaffold actually reduces score variance on repeated runs is a hypothesis, not a measurement. Do not treat this as a production debiaser until the ablation study ships. See `PLAN-v2.md` for the test protocol and pass/fail thresholds.
-- Cross-model convergence (Opus, Sonnet, Haiku, Ollama qwen3.5) is a hypothesis too. Same Phase 4 test will measure it.
-
-If Phase 4 shows no variance reduction, this package gets archived with a note. You have been warned.
-
-## When to use it
-
-- You are building an LLM-backed evaluator (rubric, code review, grading, classification) and you notice the same prompt scores differently across runs.
-- You are invoking a model that has access to your CLAUDE.md / memory / session context, and you need that model to evaluate something authored within that same session without flattering you.
-- You are running a multi-backend ablation and need the same debiaser string to work identically under Anthropic, OpenAI, and Ollama.
-
-## When not to use it
-
-- You need **guaranteed** bias elimination. This scaffold is statistical; individual runs may still be biased, and it does not defeat motivated adversarial contexts.
-- You need **generation** debiasing. v0.0.x is tested only for scoring / evaluation.
-- You are scoring long targets (>10k tokens) or multi-turn dialogues. Unvalidated in v0.0.x.
-- You are running non-English prompts. Scaffold is English only.
-- You already have `claude --bare` available and are scoring with claude-cli only. `--bare` is a stronger isolation primitive for that specific case. `hermes-blind` is complementary, not a substitute.
-
-## How it relates to hermes-rubric
-
-[`hermes-rubric`](https://github.com/hermes-labs-ai/hermes-rubric) enforces evidence-first discipline at the *tool* level — citations per dimension, hedging on thin evidence. That addresses fabrication but not bias in evidence *selection*. The scorer may still cherry-pick quotes consistent with a pre-formed conclusion drawn from session context.
-
-`hermes-blind` addresses the selection stage: by forcing disclosure and gating on quoted evidence at the *prompt* level, the scaffold survives across backends that `hermes-rubric` will eventually support. Integration is gated on Phase 4 — if the empirical test fails, no integration happens.
+0.1.3 is the first public 0.1.x release. The public comparison is therefore
+**0.0.6 → 0.1.3**. Versions 0.1.0 through 0.1.2 were internal development
+candidates; 0.1.3 is a patch over the unpublished 0.1.2 candidate that adds
+multi-goal extraction and aligns the public package surface.
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
 
----
-
-Part of the [Hermes Labs](https://hermes-labs.ai) audit stack.
-Companion tools: [hermes-rubric](https://github.com/hermes-labs-ai/hermes-rubric) · [hermes-seal](https://github.com/roli-lpci/hermes-seal) · [lintlang](https://github.com/hermes-labs-ai/lintlang) · [scaffold-lint](https://github.com/hermes-labs-ai/scaffold-lint)
+Part of [Hermes Labs](https://hermes-labs.ai).
