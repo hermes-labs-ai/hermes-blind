@@ -1,43 +1,21 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Reporting
 
-`hermes-blind` is v0.0.x — experimental. The scaffold itself is a string
-constant; it contains no executable code, no network calls, no credential
-handling, no user data storage. The surface area for security vulnerabilities
-is small but not zero.
+Email **roli@hermes-labs.ai** with subject `[security] hermes-blind`.
+Please do not open a public issue for a suspected vulnerability.
 
-## Reporting a Vulnerability
+## Threat model
 
-Email: **roli@hermes-labs.ai** with subject line `[security] hermes-blind`.
+hermes-blind is a local, standard-library-only text transformation package.
+It makes no network requests and handles no credentials.
 
-Do not open public GitHub issues for security reports.
+Recovery mode reads a local session JSONL chosen by the caller. The generated
+markdown can contain user-authored text from the first turn. It omits the
+absolute source path by default, but callers must still treat the output as
+potentially sensitive and inspect it before sharing.
 
-We will acknowledge within 72 hours. If the issue is valid, we will ship a
-fix in the next patch release and credit the reporter (unless anonymous is
-preferred).
-
-## Threat Model (v0.0.x)
-
-What this package guards against:
-
-- None directly. This is a prompt-engineering utility, not a security tool.
-
-What this package does **not** defend against:
-
-- **Prompt injection** — a target containing `[/HERMES-BLIND]` or adversarial
-  text can interfere with the scaffold's structure. Callers handling
-  untrusted targets should sanitize before wrapping.
-- **Motivated model subversion** — a fine-tuned or jailbroken model can
-  ignore the scaffold entirely. The scaffold is for honest bias reduction,
-  not adversarial robustness.
-- **Downstream API leakage** — wrapped prompts are passed to whichever LLM
-  backend the caller chooses. Whatever that backend does with the prompt is
-  outside this package's scope.
-
-## Disclosure-line Caveat
-
-`extract_disclosure()` parses model output looking for prior-exposure text.
-The disclosure is an honor-system signal — the model may lie, omit, or
-confabulate. Do not rely on the disclosure line for any security decision.
-It is diagnostic, not authoritative.
+The package does not defend against prompt injection, model deception,
+malicious session logs, or downstream data handling by an LLM provider.
+`extract_disclosure()` is diagnostic only; its output must never authorize a
+security decision.

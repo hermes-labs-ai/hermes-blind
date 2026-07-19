@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_blind import DEFAULT_VARIANT, VARIANTS, extract_disclosure, wrap
+from hermes_blind import (
+    DEFAULT_VARIANT,
+    LENGTH_SWEEP_VARIANTS,
+    MECHANISM_VARIANTS,
+    VARIANTS,
+    extract_disclosure,
+    wrap,
+)
 from hermes_blind.scaffold import token_estimate
 
 
@@ -39,23 +46,40 @@ class TestWrap:
 
 
 class TestTokenOrdering:
-    """Ablation relies on strict length ordering. If this fails, the sweep
-    isn't measuring what we think it is."""
+    """Ablation relies on strict length ordering of the LENGTH SWEEP family.
+    Mechanism-test variants (placebo, gate-only) are intentionally outside it."""
 
-    def test_variants_ordered_by_length(self):
-        order = ["null", "micro", "short", "v1", "full"]
-        tokens = [token_estimate(v) for v in order]
+    def test_length_sweep_variants_ordered_by_length(self):
+        tokens = [token_estimate(v) for v in LENGTH_SWEEP_VARIANTS]
         assert tokens == sorted(tokens), (
-            f"variants not in ascending token order: {dict(zip(order, tokens, strict=True))}"
+            f"length-sweep variants not in ascending token order: "
+            f"{dict(zip(LENGTH_SWEEP_VARIANTS, tokens, strict=True))}"
         )
 
     def test_micro_is_shortest_non_null(self):
         assert token_estimate("micro") > 0
         assert token_estimate("micro") < token_estimate("short")
 
-    def test_full_is_longest(self):
-        lengths = {v: token_estimate(v) for v in VARIANTS}
+    def test_full_is_longest_in_length_sweep(self):
+        lengths = {v: token_estimate(v) for v in LENGTH_SWEEP_VARIANTS}
         assert lengths["full"] == max(lengths.values())
+
+    def test_placebo_is_length_matched_to_v1(self):
+        """Placebo's whole purpose is length-matching v1 to isolate
+        scaffold-content effect from preamble-priming. If it drifts
+        out of ±25% of v1, the comparison loses power."""
+        v1_tokens = token_estimate("v1")
+        placebo_tokens = token_estimate("placebo")
+        ratio = placebo_tokens / v1_tokens
+        assert 0.75 <= ratio <= 1.25, (
+            f"placebo ({placebo_tokens}) drifted from v1 ({v1_tokens}); "
+            f"ratio {ratio:.2f} outside [0.75, 1.25]"
+        )
+
+    def test_gate_only_is_shorter_than_v1(self):
+        """gate-only isolates ONE clause from v1; must be shorter than v1
+        or it's not isolating anything."""
+        assert token_estimate("gate-only") < token_estimate("v1")
 
 
 class TestExtractDisclosure:
@@ -114,3 +138,26 @@ class TestScaffoldInvariants:
         assert token_estimate("v1") <= 60, (
             f"v1 is now {token_estimate('v1')} tokens — too long for this name"
         )
+
+    def test_variant_families_partition_variants(self):
+        """Length-sweep + mechanism-test must cover every variant exactly once."""
+        union = set(LENGTH_SWEEP_VARIANTS) | set(MECHANISM_VARIANTS)
+        intersection = set(LENGTH_SWEEP_VARIANTS) & set(MECHANISM_VARIANTS)
+        assert union == set(VARIANTS), f"variant families miss: {set(VARIANTS) - union}"
+        assert intersection == set(), f"variant in both families: {intersection}"
+
+    def test_placebo_has_no_blind_keywords(self):
+        """Placebo must contain NO scaffold-content keywords; otherwise it's
+        not testing what it claims to test."""
+        placebo = VARIANTS["placebo"].lower()
+        for forbidden in ("evidence", "hedge", "exposure", "disclose", "blind"):
+            assert forbidden not in placebo, (
+                f"placebo contains scaffold keyword {forbidden!r} — content-vs-length test invalidated"
+            )
+
+    def test_gate_only_contains_only_gate_clause(self):
+        """gate-only must isolate the evidence-gate; no disclosure or hedging."""
+        gate = VARIANTS["gate-only"].lower()
+        assert "evidence" in gate, "gate-only missing the evidence clause"
+        assert "exposure" not in gate, "gate-only leaks disclosure ritual"
+        assert "hedge" not in gate, "gate-only leaks hedging clause"

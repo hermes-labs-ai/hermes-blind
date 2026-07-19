@@ -1,0 +1,83 @@
+{
+  "evaluation_id": "anchor-fidelity-20260718",
+  "release": "0.1.3",
+  "question": "Does goals-mode represent more pre-listed turn-one goals than the legacy first-sentence anchor?",
+  "scope": "recovery-artifact mission representation only",
+  "evaluated_commit": "ca433597e8b3683d38dcd656fa7a35ad1c985114",
+  "method": {
+    "design_frozen_before_corpus_mining": true,
+    "planned_sessions": 10,
+    "observed_sessions": 9,
+    "protocol_deviation": "The completed receipt contains nine sessions and does not record why the tenth planned session was absent.",
+    "goals": 66,
+    "goal_listing": "A fresh-context model reviewer saw only each turn-one seed and pre-listed its distinct goals.",
+    "representation_check": "A separate Haiku reviewer marked every pre-listed goal REPRESENTED or ABSENT in both anchors.",
+    "human_adjudication": false
+  },
+  "privacy": {
+    "source": "private real-world session openings from one operating environment",
+    "raw_text_published": false,
+    "local_paths_published": false,
+    "complete_session_ids_published": false,
+    "individual_goal_judgments_published": false,
+    "external_label_audit_possible_from_public_packet": false
+  },
+  "per_session": [
+    {"session": "S01", "goals": 12, "legacy_represented": 0, "goals_mode_represented": 7},
+    {"session": "S02", "goals": 10, "legacy_represented": 0, "goals_mode_represented": 4},
+    {"session": "S03", "goals": 3, "legacy_represented": 1, "goals_mode_represented": 1},
+    {"session": "S04", "goals": 6, "legacy_represented": 1, "goals_mode_represented": 5},
+    {"session": "S05", "goals": 4, "legacy_represented": 3, "goals_mode_represented": 3},
+    {"session": "S06", "goals": 12, "legacy_represented": 0, "goals_mode_represented": 5},
+    {"session": "S07", "goals": 5, "legacy_represented": 2, "goals_mode_represented": 4},
+    {"session": "S08", "goals": 12, "legacy_represented": 0, "goals_mode_represented": 9},
+    {"session": "S09", "goals": 2, "legacy_represented": 0, "goals_mode_represented": 2}
+  ],
+  "pooled": {
+    "legacy": {
+      "represented": 7,
+      "total": 66,
+      "coverage": 0.106,
+      "wilson_95_ci": [0.052, 0.203]
+    },
+    "goals_mode": {
+      "represented": 40,
+      "total": 66,
+      "coverage": 0.606,
+      "wilson_95_ci": [0.485, 0.715]
+    },
+    "additional_goals_represented": 33,
+    "absolute_coverage_increase": 0.5,
+    "coverage_ratio": 5.714285714285714,
+    "paired_goal_transitions": {
+      "absent_to_absent": 26,
+      "absent_to_represented": 33,
+      "represented_to_absent": 0,
+      "represented_to_represented": 7
+    }
+  },
+  "session_level": {
+    "improved": 7,
+    "tied": 2,
+    "regressed": 0,
+    "exploratory_two_sided_exact_sign_test": {
+      "non_tied_sessions": 7,
+      "positive_differences": 7,
+      "p_value": 0.015625,
+      "pre_registered": false
+    }
+  },
+  "limits": [
+    "Does not evaluate downstream model adherence or task outcomes.",
+    "Does not evaluate automatic drift detection or intervention timing.",
+    "Model-produced goal labels and representation checks were not human-adjudicated.",
+    "The private corpus is not included, so external readers cannot audit labels from this packet alone.",
+    "Nine sessions from one operating environment do not support population-wide generalization."
+  ],
+  "source_commitments": {
+    "frozen_spec_sha256": "05b4afc471eb47a15212fd3dbf225321ca61eeb698252b247594890ef3956555",
+    "source_e3_results_sha256": "376a5fbd69accb644171bac0f0363cca09e93d54f298f1adcc20ee4b9ca6fbcf",
+    "source_results_report_sha256": "4774264dd9b8ea16b13fb63a2a81a73c240b68a9783b264c586e104173e92d2a",
+    "private_corpus_commitment_file_sha256": "a241c04d94c572ae109e2e99f2e22e1c9cf3ae1df42c649010882685b8820c71"
+  }
+}

@@ -1,8 +1,9 @@
 """The scaffold itself — four variants for the ablation study.
 
 Each variant wraps the caller's prompt with a [HERMES-BLIND]...[/HERMES-BLIND]
-block that forces: disclosure of prior exposure, evidence-gating, hedging
-license, and (in longer variants) output-shape discipline.
+block that requests disclosure of prior exposure, evidence-gating, hedging
+license, and (in longer variants) output-shape discipline. These are designed
+mechanisms, not established behavioral effects.
 
 Token counts are approximate (tiktoken `cl100k_base`); the point is relative
 ordering across variants for the ablation, not absolute accuracy.
@@ -18,6 +19,7 @@ import re
 # flipping a variant name rather than branching the caller.
 VARIANTS: dict[str, str] = {
     "null": "",
+    # Length-sweep family — strict length ordering: null < micro < short < v1 < full
     "micro": "[BLIND] Score on quoted evidence only. [/BLIND]\n\n",
     "short": (
         "[BLIND] Prior exposure? disclose. Evidence quotes only. "
@@ -41,7 +43,27 @@ VARIANTS: dict[str, str] = {
         "Prefer hedging over a confident wrong score.\n"
         "[/HERMES-BLIND]\n\n"
     ),
+    # Mechanism-test variants (v0.0.7) — sit OUTSIDE the length sweep.
+    # `placebo` is length-matched to v1 to test scaffold-content vs preamble-priming.
+    # `gate-only` isolates the evidence-gating clause from the disclosure ritual.
+    "placebo": (
+        "[NOTICE]\n"
+        "This is an evaluation task. Please be thorough in your work. "
+        "Take your time and proceed step by step. Read carefully and "
+        "consider all the relevant aspects of the target before you "
+        "produce your answer.\n"
+        "[/NOTICE]\n\n"
+    ),
+    "gate-only": (
+        "[BLIND] Score using only quoted evidence from the target "
+        "text below. [/BLIND]\n\n"
+    ),
 }
+
+# The length-sweep family — strict length-ordering applies. Mechanism-test
+# variants (placebo, gate-only) are intentionally excluded.
+LENGTH_SWEEP_VARIANTS: tuple[str, ...] = ("null", "micro", "short", "v1", "full")
+MECHANISM_VARIANTS: tuple[str, ...] = ("placebo", "gate-only")
 
 DEFAULT_VARIANT = "v1"
 
