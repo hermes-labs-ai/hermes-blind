@@ -6,6 +6,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/). The 0.x line remains experimental;
 minor versions may change the public surface before 1.0.
 
+## [0.1.4] — 2026-08-04
+
+### Changed
+
+- Reframed the README around the two concrete user paths: recovering the
+  original goal of a long Claude Code or Codex session, and adding evidence
+  constraints to an evaluation prompt.
+- Added direct `pipx` and `pip` installation paths, a copyable agent-led
+  onboarding instruction, and clearer output and safety expectations.
+- Improved PyPI keywords and project links for session recovery, agent tooling,
+  and LLM evaluation discovery.
+- Added multi-version CI with lint, tests, distribution checks, and isolated
+  wheel-install smoke tests.
+- Added credential-free PyPI publishing through GitHub Actions trusted
+  publishing.
+
+### Evidence boundary
+
+- This release changes public presentation, packaging metadata, and release
+  automation. It does not change runtime behavior or expand the behavioral
+  claims established for 0.1.3.
+
 ## [0.1.3] — 2026-07-19
 
 0.1.3 is the first public 0.1.x release. The public comparison is
