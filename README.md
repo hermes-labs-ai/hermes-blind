@@ -1,54 +1,107 @@
-# hermes-blind
+# Hermes Blind
 
-**Deterministic prompt and session-recovery scaffolds for LLM workflows.**
+**Recover the original goal of a long Claude Code or Codex session—and add evidence constraints to evaluation prompts.**
 
 [![PyPI](https://img.shields.io/pypi/v/hermes-blind.svg)](https://pypi.org/project/hermes-blind/)
 [![Python](https://img.shields.io/pypi/pyversions/hermes-blind.svg)](https://pypi.org/project/hermes-blind/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![CI](https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml/badge.svg)](https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/hermes-labs-ai/hermes-blind/blob/main/LICENSE)
 [![Status: experimental](https://img.shields.io/badge/status-experimental-orange.svg)](#evidence-and-limits)
 
-hermes-blind provides two small, standard-library-only primitives:
+Long agent sessions can lose the shape of the request that started them.
+Hermes Blind reads the first user turn from a local Claude Code or Codex JSONL
+log and writes a compact recovery anchor you can inspect and paste back into
+the session. It also provides a small prompt wrapper for evaluations that asks
+the model to disclose prior exposure, quote its evidence, and hedge when the
+evidence is thin.
 
-1. prepend an evidence-gating scaffold to an evaluation prompt; and
-2. recover a compact turn-one goal anchor from a Claude Code or Codex session log.
-
-It makes no model calls, sends no network requests, and does not claim to
-detect drift automatically.
+The package is deterministic, dependency-free at runtime, and local: it makes
+no model calls and sends no network requests.
 
 ## Install
 
+For the isolated command-line app:
+
 ```bash
-pip install hermes-blind
+pipx install hermes-blind
 ```
 
-Python 3.10+.
+Or install it into your current Python environment:
 
-## Recover a long session
+```bash
+python -m pip install hermes-blind
+```
+
+Requires Python 3.10+.
+
+## Recover a long agent session
+
+The lowest-friction path is to give your coding agent this instruction:
+
+> Install `hermes-blind`. Find the JSONL log for this Claude Code or Codex
+> session, then run `hermes-blind apply --session <path> --format auto
+> --turn <current-turn-number> --out recovery.md`. Show me the generated
+> anchor and use it to restate my original goals before continuing. Do not
+> overwrite files or share the session text.
+
+Or run it directly:
 
 ```bash
 hermes-blind apply \
-  --session /path/to/rollout.jsonl \
+  --session /path/to/session.jsonl \
   --format auto \
-  --anchor-mode goals \
   --turn 9 \
   --out recovery.md
 ```
 
-The default `goals` mode scans the first user turn for goal-carrying
-sentences and preserves up to 12 of them. Use `first-sentence` for the
-legacy compact behavior or `full` to include up to 4,000 characters.
-`--format auto` recognizes Claude Code and Codex JSONL shapes.
+The generated markdown starts like this:
 
-The `--turn` value is output metadata. It is not an automatic trigger and
-does not imply that turn 9 is an empirically optimal intervention point.
-Existing output files are preserved unless `--force` is passed; the input
-session file can never be used as the output path.
+```markdown
+# Recovery scaffold (anchor-extracted from turn 1, applied at turn 9)
 
-Recovery output includes user-authored text. It records only the session
-filename, not its absolute path, but you should still inspect the markdown
-before sharing it.
+## Original anchor
+- stated_goal: "Ship the onboarding flow and verify the clean install"
 
-## Wrap an evaluation prompt
+## Session state
+- session file: rollout.jsonl
+- user turns observed: 9
+```
+
+`--format auto` recognizes Claude Code and Codex JSONL shapes. The default
+`goals` mode preserves up to 12 goal-carrying sentences from the first user
+turn; `first-sentence` keeps the compact legacy behavior and `full` includes
+up to 4,000 characters.
+
+The `--turn` value is only a label in the output. Hermes Blind does not detect
+drift or decide when recovery is needed. Existing output files are preserved
+unless `--force` is explicit, and the input session file can never be used as
+the output path.
+
+Recovery files include user-authored text. Inspect them before sharing.
+
+## Add evidence constraints to an evaluation prompt
+
+From the CLI:
+
+```bash
+hermes-blind apply \
+  --variant v1 \
+  --prompt "Score this release from quoted evidence."
+```
+
+This prints a wrapped prompt without calling a model:
+
+```text
+[HERMES-BLIND]
+If you have prior exposure to this target or its author, state it in one line.
+Score using only quoted evidence from the target text below.
+Unknown or thin evidence = hedge; do not confabulate.
+[/HERMES-BLIND]
+
+Score this release from quoted evidence.
+```
+
+Or use the Python API:
 
 ```python
 from hermes_blind import wrap
@@ -59,67 +112,32 @@ prompt = wrap(
 )
 ```
 
-Or from the CLI:
-
-```bash
-hermes-blind apply --variant v1 --prompt "Score this artifact from quoted evidence."
-```
-
-Available variants are `null`, `micro`, `short`, `v1`, `full`,
-`placebo`, and `gate-only`. The `null` variant is an exact no-op for
-controlled comparisons.
-
-## Rubric framing helpers
-
+Available variants are `null`, `micro`, `short`, `v1`, `full`, `placebo`, and
+`gate-only`. The `null` variant is an exact no-op for controlled comparisons.
 The package also exposes the dependency-free intent and scope preambles used
-by hermes-rubric:
-
-```python
-from hermes_blind import compose_intent
-
-framed = compose_intent(
-    "Evaluate whether this release is ready.",
-    scope_class="results-bundle",
-    intent_debias=True,
-)
-```
+by [Hermes Rubric](https://github.com/hermes-labs-ai/hermes-rubric).
 
 ## Evidence and limits
 
-Validated mechanics for 0.1.3:
+The repository tests and CI cover deterministic wrapping, Claude Code and
+Codex JSONL parsing, recovery modes, safe output handling, package
+installation, and CLI invocation.
 
-- deterministic prompt wrapping and disclosure parsing;
-- Claude Code and Codex JSONL parsing;
-- three recovery anchor modes;
-- prompt preservation and scaffold-family invariants;
-- package build, clean installation, CLI invocation, and unit tests.
-
-A frozen 66-goal extraction audit found that goal-set extraction represented
-40 of 66 pre-listed goals, compared with 7 of 66 for the previous
-first-sentence heuristic: a 50.0 percentage-point increase, with improvement
-in 7 of 9 sessions and ties in 2. This demonstrates substantially better
-**mission representation in the generated recovery artifact**, a necessary
-first step for recovery. It does not establish that reinserting the artifact
-causes downstream model adherence or better task outcomes. See the
-[privacy-safe evaluation report](https://github.com/hermes-labs-ai/hermes-blind/blob/main/EVALUATION.md)
-for the method, sanitized
-per-session results, statistical context, limitations, and receipt hashes.
-
-Public synthetic fixtures in `tests/test_apply.py` reproduce the parsing,
-extraction, safety, and output mechanics with fabricated Claude Code and Codex
-JSONL. They do not reproduce the private 40/66 audit.
+A frozen nine-session extraction audit found that the default goal-set anchor
+represented 40 of 66 pre-listed goals, compared with 7 of 66 for the earlier
+first-sentence heuristic. That supports better mission representation in the
+generated artifact for the evaluated sessions. It does **not** establish that
+reinserting the artifact changes model behavior or improves task outcomes.
+See the [evaluation report](https://github.com/hermes-labs-ai/hermes-blind/blob/main/EVALUATION.md)
+for the method, limitations, sanitized results, and receipt hashes.
 
 Not established:
 
 - reliable bias reduction from the evaluation prefix;
-- successful behavioral recovery after inserting a generated anchor;
+- successful behavioral recovery after inserting an anchor;
 - automatic drift detection or an optimal intervention turn;
-- adversarial prompt-injection resistance;
+- adversarial prompt-injection resistance; or
 - non-English behavior.
-
-Earlier single-shot experiments did not establish the original bias-reduction
-hypothesis. A later multi-turn research harness remains internal and is not
-part of the public runtime because its efficacy study is incomplete.
 
 Treat the output as a transparent scaffold for a human or agent to inspect,
 not as a security boundary or independent evaluator.
@@ -129,22 +147,20 @@ not as a security boundary or independent evaluator.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 ruff check src tests
 pytest -q
 python -m build
 twine check dist/*
 ```
 
-## Version note
-
-0.1.3 is the first public 0.1.x release. The public comparison is therefore
-**0.0.6 → 0.1.3**. Versions 0.1.0 through 0.1.2 were internal development
-candidates; 0.1.3 is a patch over the unpublished 0.1.2 candidate that adds
-multi-goal extraction and aligns the public package surface.
+See the [changelog](https://github.com/hermes-labs-ai/hermes-blind/blob/main/CHANGELOG.md)
+for release history and the
+[contribution guide](https://github.com/hermes-labs-ai/hermes-blind/blob/main/CONTRIBUTING.md)
+for contribution guidance.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See the [license](https://github.com/hermes-labs-ai/hermes-blind/blob/main/LICENSE).
 
-Part of [Hermes Labs](https://hermes-labs.ai).
+Built by [Hermes Labs](https://hermes-labs.ai).

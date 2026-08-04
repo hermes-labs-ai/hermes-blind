@@ -5,15 +5,24 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "hermes-blind"
 version = "0.1.3"
-description = "Deterministic prompt and session-recovery scaffolds for LLM workflows"
+description = "Local recovery anchors for Claude Code and Codex sessions, plus evidence-gated evaluation prompts"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{ name = "Hermes Labs", email = "roli@hermes-labs.ai" }]
-keywords = ["llm", "prompt-engineering", "session-recovery", "scaffold", "evaluation"]
+keywords = [
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "drift-recovery",
+    "llm-evaluation",
+    "prompt-engineering",
+    "session-recovery",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -33,6 +42,8 @@ dev = [
 ]
 
 [project.urls]
+"Homepage" = "https://hermes-labs.ai/open-source"
+"Documentation" = "https://github.com/hermes-labs-ai/hermes-blind#readme"
 "Source" = "https://github.com/hermes-labs-ai/hermes-blind"
 "Issues" = "https://github.com/hermes-labs-ai/hermes-blind/issues"
 "Changelog" = "https://github.com/hermes-labs-ai/hermes-blind/blob/main/CHANGELOG.md"
