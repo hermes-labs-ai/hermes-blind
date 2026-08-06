@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Hermes Blind: recover the original goal of a long agent session and add evidence constraints to evaluation prompts"
+abstract: "Hermes Blind reads the first user turn from a local Claude Code or Codex JSONL log and writes a compact recovery anchor that can be inspected and pasted back into a long-running session. It also provides a small prompt wrapper for evaluations that asks the model to disclose prior exposure, quote its evidence, and hedge when the evidence is thin. The package is deterministic, dependency-free at runtime, and local: it makes no model calls and sends no network requests."
+type: software
+authors:
+  - family-names: "Bosch Rodriguez"
+    given-names: "Rolando"
+    orcid: "https://orcid.org/0009-0005-4896-1112"
+    affiliation: "Hermes Labs"
+license: MIT
+repository-code: "https://github.com/hermes-labs-ai/hermes-blind"
+version: "0.1.4"
+keywords:
+  - "session recovery"
+  - "Claude Code"
+  - "Codex"
+  - "prompt evaluation"
+  - "deterministic"
