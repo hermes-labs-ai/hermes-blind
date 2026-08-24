@@ -49,10 +49,13 @@ stage, not the citation stage.
 (2)-(4), and doesn't generalize. A scaffold generalizes; a model-swap requires
 infrastructure change.
 
-**Why a language scaffold specifically?** LPCI demonstrated scaffolds carry
-state across stateless inference (Markov TE≈0, cross-model, measured
-empirically). HERMES-BLIND tests the *suppression dual* — whether scaffolds
-can actively push state out. If this works, it's a new primitive in the
+**Why a language scaffold specifically?** LPCI (LangQuant) showed a
+per-turn-refreshed scaffold can carry working state across stateless inference:
+in the 20-turn continuity run, the scaffold-only arm scored 0.846 on recall
+probes versus 0.000 for the no-context arm (n=15 sessions per arm). The earlier
+information-flow (transfer-entropy) reading of that run was a code artifact and
+is retracted; see the LangQuant experiment record (docs/EXPERIMENTS.md there). HERMES-BLIND tests the
+*suppression dual* — whether scaffolds can actively push state out. If this works, it's a new primitive in the
 scaffold-theory toolkit, not just a product.
 
 ## Draft scaffold — HERMES-BLIND v1
