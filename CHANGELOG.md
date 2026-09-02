@@ -6,6 +6,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/). The 0.x line remains experimental;
 minor versions may change the public surface before 1.0.
 
+## [0.1.5] — 2026-09-02
+
+### Added
+
+- Added an opt-in Hermes Agent `pre_llm_call` shell-hook adapter that injects
+  a recovery anchor once at an explicitly selected turn.
+- Added in-memory transcript extraction for hosts that already provide their
+  conversation history, avoiding a temporary JSONL copy.
+
+### Evidence boundary
+
+- The integration uses Hermes Agent's ephemeral, fail-open context-injection
+  contract. It does not detect drift, choose an intervention turn, or establish
+  that reinserting the scaffold changes model behavior.
+
 ## [0.1.4] — 2026-08-04
 
 ### Changed
