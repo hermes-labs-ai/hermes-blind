@@ -203,7 +203,35 @@ def build_recovery_scaffold(
     user_turns = list(iterator(jsonl_path))
     if not user_turns:
         raise ValueError(f"no user turns found in {jsonl_path.name}")
-    first = user_turns[0][1].strip()
+    return build_recovery_scaffold_from_user_texts(
+        [text for _, text in user_turns],
+        turn,
+        anchor_mode=anchor_mode,
+        session_name=jsonl_path.name,
+        session_label="session file",
+    )
+
+
+def build_recovery_scaffold_from_user_texts(
+    user_texts: list[str],
+    turn: int,
+    *,
+    anchor_mode: str = "goals",
+    session_name: str = "session",
+    session_label: str = "session source",
+) -> str:
+    """Build a recovery scaffold from an in-memory sequence of user turns.
+
+    This is the host-integration counterpart to :func:`build_recovery_scaffold`:
+    callers that already receive a conversation transcript do not need to
+    serialize private session text to a temporary file merely to use Blind's
+    deterministic anchor extraction.
+    """
+    user_texts = [text for text in user_texts if isinstance(text, str) and text.strip()]
+    if not user_texts:
+        raise ValueError("no user turns found in session")
+
+    first = user_texts[0].strip()
     # First sentence, capped at 240 chars.
     end = min(
         (i for i in (first.find(". "), first.find("\n\n"), 240) if i > 0),
@@ -211,7 +239,7 @@ def build_recovery_scaffold(
     )
     stated_goal = first[:end].strip().rstrip(".")
 
-    total_user_turns = len(user_turns)
+    total_user_turns = len(user_texts)
     anchor_lines = [f'- stated_goal: "{stated_goal}"']
     if anchor_mode == "goals":
         kept, total = _extract_goal_sentences(first)
@@ -254,7 +282,7 @@ def build_recovery_scaffold(
         *anchor_lines,
         "",
         "## Session state",
-        f"- session file: {jsonl_path.name}",
+        f"- {session_label}: {session_name}",
         f"- user turns observed: {total_user_turns}",
         f"- recovery applied at turn: {turn}",
         "",

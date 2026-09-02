@@ -14,6 +14,7 @@ from __future__ import annotations
 import sys
 
 from hermes_blind.apply import main as apply_main
+from hermes_blind.hermes_agent_hook import main as hermes_agent_hook_main
 
 
 def _print_help() -> None:
@@ -22,9 +23,10 @@ def _print_help() -> None:
 
 Usage:
   hermes-blind apply [options]
+  hermes-blind hermes-agent-hook --at-turn N
   hermes-blind --help
 
-Run 'hermes-blind apply --help' for all options.
+Run a subcommand with --help for all options.
 """
     )
 
@@ -34,11 +36,13 @@ def main(argv: list[str] | None = None) -> int:
     if not args or args[0] in ("-h", "--help"):
         _print_help()
         return 0
-    if args[0] != "apply":
-        print(f"hermes-blind: unknown subcommand {args[0]!r}", file=sys.stderr)
-        print("Run 'hermes-blind --help' for usage.", file=sys.stderr)
-        return 2
-    return apply_main(args[1:])
+    if args[0] == "apply":
+        return apply_main(args[1:])
+    if args[0] == "hermes-agent-hook":
+        return hermes_agent_hook_main(args[1:])
+    print(f"hermes-blind: unknown subcommand {args[0]!r}", file=sys.stderr)
+    print("Run 'hermes-blind --help' for usage.", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":

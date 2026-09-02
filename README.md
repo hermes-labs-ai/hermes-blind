@@ -79,6 +79,28 @@ the output path.
 
 Recovery files include user-authored text. Inspect them before sharing.
 
+### Re-anchor a Hermes Agent session at a chosen turn
+
+Hermes Agent's `pre_llm_call` shell-hook contract can inject a recovery
+anchor without writing the conversation to another file. Choose the turn
+explicitly in `~/.hermes/config.yaml`:
+
+```yaml
+hooks:
+  pre_llm_call:
+    - command: "hermes-blind hermes-agent-hook --at-turn 9"
+      timeout: 5
+```
+
+Hermes Agent asks for consent the first time it runs a shell hook. At the
+selected turn, Blind reads the hook payload on stdin and returns a compact
+`context` block on stdout. On other turns, malformed input, or an unsupported
+payload it returns an empty object and the agent proceeds unchanged.
+
+The turn is a user-chosen intervention point, not a detected drift event or an
+efficacy threshold. The injected anchor is ephemeral and may contain text from
+the first user turn; do not treat it as a security boundary.
+
 ## Add evidence constraints to an evaluation prompt
 
 From the CLI:
