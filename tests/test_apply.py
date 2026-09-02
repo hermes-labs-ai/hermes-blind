@@ -7,7 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from hermes_blind.apply import build_recovery_scaffold, main
+from hermes_blind.apply import (
+    build_recovery_scaffold,
+    build_recovery_scaffold_from_user_texts,
+    main,
+)
 
 
 def _write_session(tmp: Path, user_msgs: list[str]) -> Path:
@@ -73,6 +77,17 @@ def test_recovery_scaffold_extracts_first_user_turn_as_goal(tmp_path):
     assert "Reorient" in md
     assert "session file: session.jsonl" in md
     assert str(tmp_path) not in md
+
+
+def test_recovery_scaffold_accepts_in_memory_host_transcript():
+    md = build_recovery_scaffold_from_user_texts(
+        ["Build the release and verify it.", "Continue."],
+        turn=2,
+        session_name="Hermes Agent conversation",
+    )
+    assert 'stated_goal: "Build the release and verify it"' in md
+    assert "session source: Hermes Agent conversation" in md
+    assert "user turns observed: 2" in md
 
 
 def test_recovery_scaffold_missing_session_raises(tmp_path):
