@@ -21,7 +21,7 @@ reported by basename only.
     python -m hermes_blind.evidence --session fixtures/lab/claude-first-turn.jsonl
     python -m hermes_blind.evidence --session rollout.jsonl --format codex --anchor-mode full
 
-Added in v0.1.6 (unreleased).
+Added in v0.2.0.
 """
 
 from __future__ import annotations

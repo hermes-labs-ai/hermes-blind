@@ -21,8 +21,9 @@ python -m build
 twine check dist/*
 ```
 
-Also install the built wheel in a clean environment and invoke both
-`hermes-blind --help` and `hermes-blind apply --help`.
+Also install the built wheel in a clean environment and invoke
+`hermes-blind --help`, `hermes-blind apply --help`, and
+`python -m hermes_blind.evidence --help`.
 
 ## Invariants
 
