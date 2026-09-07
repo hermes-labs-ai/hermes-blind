@@ -1,0 +1,5 @@
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Ship the onboarding flow for the demo tenant and verify the clean install on a fresh machine. Add a smoke test that runs the installer end to end. Keep the public catalog boundary unchanged."}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "On it."}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Second turn, corrupt
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Reply."}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "te

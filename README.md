@@ -101,6 +101,26 @@ The turn is a user-chosen intervention point, not a detected drift event or an
 efficacy threshold. The injected anchor is ephemeral and may contain text from
 the first user turn; do not treat it as a security boundary.
 
+### Machine-readable result envelope
+
+The same extraction can be emitted as a Hermes Reliability Lab result
+envelope — the markdown scaffold embedded verbatim, plus the facts it was
+rendered from, tool version, a hash of the exact input bytes, one finding per
+thing worth knowing, the exit code, a timestamp, and the Git commit when run
+from a checkout:
+
+```bash
+python -m hermes_blind.evidence --session /path/to/session.jsonl --format auto
+```
+
+Extraction is unchanged; what is added is observability. Lines that do not
+parse are counted and reported (`input.unparseable-lines`) instead of only
+being skipped; two user turns before the first assistant reply are reported
+(`input.ambiguous-initial-turn`) and turn 1 is still the anchor; a file with
+no user turn is the product's own error, exit 1, with no anchor invented. The
+session path is always explicit — nothing is discovered under your home
+directory — and it appears in the record by basename only.
+
 ## Add evidence constraints to an evaluation prompt
 
 From the CLI:

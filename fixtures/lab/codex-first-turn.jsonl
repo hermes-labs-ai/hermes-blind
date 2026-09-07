@@ -1,0 +1,6 @@
+{"type": "session_meta", "payload": {"id": "synthetic-session", "cwd": "/tmp/synthetic"}}
+{"type": "event_msg", "payload": {"type": "user_message", "message": "Ship the onboarding flow for the demo tenant and verify the clean install on a fresh machine. Add a smoke test that runs the installer end to end. Verify the public catalog boundary stays unchanged."}}
+{"type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "Ship the onboarding flow for the demo tenant and verify the clean install on a fresh machine. Add a smoke test that runs the installer end to end. Verify the public catalog boundary stays unchanged."}]}}
+{"type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Starting with the installer."}]}}
+{"type": "event_msg", "payload": {"type": "user_message", "message": "Use the existing fixtures where you can."}}
+{"type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "Use the existing fixtures where you can."}]}}

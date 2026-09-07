@@ -6,6 +6,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/). The 0.x line remains experimental;
 minor versions may change the public surface before 1.0.
 
+## [Unreleased]
+
+### Added
+- `python -m hermes_blind.evidence`: emit a recovery-anchor extraction as a Hermes Reliability Lab result envelope with the markdown scaffold embedded verbatim. Explicit `--session` only; writes nothing; reports the path by basename.
+- `hermes_blind.apply.build_anchor()` returns an `AnchorResult` (the facts the scaffold is rendered from, plus the markdown); `build_recovery_scaffold_from_user_texts()` now delegates to it and its output is byte-identical.
+- `hermes_blind.apply.ParseStats`: optional observability for the session iterators (lines read, unparseable lines, text-less user records skipped, user turns before the first assistant reply). The iterators yield exactly what they did before.
+
 ## [0.1.5] — 2026-09-02
 
 ### Added

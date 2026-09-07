@@ -1,0 +1,4 @@
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Draft the release notes for 0.3."}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Actually, first audit the changelog for missing entries."}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Starting with the changelog audit."}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Then draft the notes."}]}}

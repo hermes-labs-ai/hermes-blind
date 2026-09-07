@@ -30,12 +30,37 @@ import json
 import re
 import sys
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from hermes_blind.scaffold import VARIANTS, wrap
 
 
-def _iter_user_texts(jsonl_path: Path) -> Iterator[tuple[int, str]]:
+@dataclass
+class ParseStats:
+    """What the parser saw while reading a session log.
+
+    Purely observational: the iterators behave identically whether or not a
+    ParseStats is passed. It exists so a caller can report, rather than guess,
+    how much of a file parsed and whether the first turn was unambiguous.
+    """
+
+    lines: int = 0
+    unparseable_lines: int = 0
+    skipped_user_records: int = 0
+    user_turns: int = 0
+    user_turns_before_first_assistant: int = 0
+    _seen_assistant: bool = field(default=False, repr=False)
+
+    def _user_turn(self) -> None:
+        self.user_turns += 1
+        if not self._seen_assistant:
+            self.user_turns_before_first_assistant += 1
+
+
+def _iter_user_texts(
+    jsonl_path: Path, stats: ParseStats | None = None
+) -> Iterator[tuple[int, str]]:
     """Yield (turn_index, user_message_text) for each user turn in a session JSONL.
 
     Skips system-reminder injections and tool-result-only turns. Turn index
@@ -44,10 +69,20 @@ def _iter_user_texts(jsonl_path: Path) -> Iterator[tuple[int, str]]:
     n = 0
     with open(jsonl_path, encoding="utf-8") as f:
         for line in f:
+            if stats is not None:
+                stats.lines += 1
             try:
                 obj = json.loads(line)
             except json.JSONDecodeError:
+                if stats is not None:
+                    stats.unparseable_lines += 1
                 continue
+            if not isinstance(obj, dict):
+                if stats is not None:
+                    stats.unparseable_lines += 1
+                continue
+            if obj.get("type") == "assistant" and stats is not None:
+                stats._seen_assistant = True
             if obj.get("type") != "user":
                 continue
             content = obj.get("message", {}).get("content")
@@ -61,15 +96,23 @@ def _iter_user_texts(jsonl_path: Path) -> Iterator[tuple[int, str]]:
                 ]
                 text = "\n".join(p for p in parts if p)
             if not text.strip():
+                if stats is not None:
+                    stats.skipped_user_records += 1
                 continue
             # Skip pure tool-result wrappers and system-reminder injections.
             if "<system-reminder>" in text and len(text) < 500:
+                if stats is not None:
+                    stats.skipped_user_records += 1
                 continue
             n += 1
+            if stats is not None:
+                stats._user_turn()
             yield n, text
 
 
-def _iter_user_texts_codex(jsonl_path: Path) -> Iterator[tuple[int, str]]:
+def _iter_user_texts_codex(
+    jsonl_path: Path, stats: ParseStats | None = None
+) -> Iterator[tuple[int, str]]:
     """Yield (turn_index, user_message_text) for each user turn in a Codex
     rollout JSONL (~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl).
 
@@ -82,12 +125,27 @@ def _iter_user_texts_codex(jsonl_path: Path) -> Iterator[tuple[int, str]]:
     previous_shape: str | None = None
     with open(jsonl_path, encoding="utf-8") as f:
         for line in f:
+            if stats is not None:
+                stats.lines += 1
             try:
                 obj = json.loads(line)
             except json.JSONDecodeError:
+                if stats is not None:
+                    stats.unparseable_lines += 1
+                continue
+            if not isinstance(obj, dict):
+                if stats is not None:
+                    stats.unparseable_lines += 1
                 continue
             top_type = obj.get("type")
             payload = obj.get("payload") or {}
+            if (
+                stats is not None
+                and top_type == "response_item"
+                and payload.get("type") == "message"
+                and payload.get("role") == "assistant"
+            ):
+                stats._seen_assistant = True
             text = ""
             shape = ""
             if top_type == "event_msg" and payload.get("type") == "user_message":
@@ -111,10 +169,14 @@ def _iter_user_texts_codex(jsonl_path: Path) -> Iterator[tuple[int, str]]:
                     )
                 shape = "response_item"
             if not isinstance(text, str) or not text.strip():
+                if stats is not None and shape:
+                    stats.skipped_user_records += 1
                 continue
             if text == previous_text and shape != previous_shape:
                 continue
             n += 1
+            if stats is not None:
+                stats._user_turn()
             previous_text = text
             previous_shape = shape
             yield n, text
@@ -159,17 +221,32 @@ _MAX_GOAL_CHARS = 220
 _MAX_FULL_CHARS = 4000
 
 
+def _split_sentences(text: str) -> list[str]:
+    """Split turn-1 text into normalized sentences (the goal filter's input)."""
+    return [
+        re.sub(r"\s+", " ", s).strip()
+        for s in _SENT_SPLIT_RE.split(text) if s and s.strip()
+    ]
+
+
 def _extract_goal_sentences(text: str) -> tuple[list[str], int]:
     """Split turn-1 text into sentences and keep the goal-carrying ones.
 
     Returns (kept_goal_sentences, total_goal_sentence_count).
     """
-    sentences = [
-        re.sub(r"\s+", " ", s).strip()
-        for s in _SENT_SPLIT_RE.split(text) if s and s.strip()
-    ]
+    sentences = _split_sentences(text)
     goals = [s for s in sentences if _GOAL_VERB_RE.search(s)]
     return [g[:_MAX_GOAL_CHARS] for g in goals[:_MAX_GOALS]], len(goals)
+
+
+def unmatched_sentences(text: str) -> list[str]:
+    """Sentences of turn-1 text that carry no goal verb and so never enter the goal set.
+
+    Observational only. The goal-verb list is finite and broad on purpose; this
+    reports what fell outside it so a reader can judge, instead of guessing
+    from what was kept.
+    """
+    return [s for s in _split_sentences(text) if not _GOAL_VERB_RE.search(s)]
 
 
 def build_recovery_scaffold(
@@ -212,6 +289,29 @@ def build_recovery_scaffold(
     )
 
 
+@dataclass
+class AnchorResult:
+    """The facts a recovery scaffold is rendered from, plus the rendered markdown.
+
+    Every field is something the markdown already states; this only makes it
+    addressable without parsing the markdown back. ``markdown`` is byte for
+    byte what :func:`build_recovery_scaffold_from_user_texts` returns.
+    """
+
+    stated_goal: str
+    anchor_mode: str
+    additional_goals: list[str]
+    goal_sentences_total: int
+    sentences_total: int
+    unmatched_sentences: list[str]
+    first_turn_chars: int
+    full_truncated: bool
+    user_turns: int
+    turn: int
+    session_name: str
+    markdown: str
+
+
 def build_recovery_scaffold_from_user_texts(
     user_texts: list[str],
     turn: int,
@@ -227,6 +327,25 @@ def build_recovery_scaffold_from_user_texts(
     serialize private session text to a temporary file merely to use Blind's
     deterministic anchor extraction.
     """
+    return build_anchor(
+        user_texts,
+        turn,
+        anchor_mode=anchor_mode,
+        session_name=session_name,
+        session_label=session_label,
+    ).markdown
+
+
+def build_anchor(
+    user_texts: list[str],
+    turn: int,
+    *,
+    anchor_mode: str = "goals",
+    session_name: str = "session",
+    session_label: str = "session source",
+) -> AnchorResult:
+    """Extract the turn-1 anchor and render it; the structured twin of
+    :func:`build_recovery_scaffold_from_user_texts` with identical output."""
     user_texts = [text for text in user_texts if isinstance(text, str) and text.strip()]
     if not user_texts:
         raise ValueError("no user turns found in session")
@@ -241,6 +360,9 @@ def build_recovery_scaffold_from_user_texts(
 
     total_user_turns = len(user_texts)
     anchor_lines = [f'- stated_goal: "{stated_goal}"']
+    additional: list[str] = []
+    total = 0
+    full_truncated = False
     if anchor_mode == "goals":
         kept, total = _extract_goal_sentences(first)
         # Emit only goals that add information beyond stated_goal. This keeps
@@ -263,7 +385,8 @@ def build_recovery_scaffold_from_user_texts(
             )
     elif anchor_mode == "full":
         full = first[:_MAX_FULL_CHARS]
-        suffix = " …[truncated]" if len(first) > _MAX_FULL_CHARS else ""
+        full_truncated = len(first) > _MAX_FULL_CHARS
+        suffix = " …[truncated]" if full_truncated else ""
         longest_backtick_run = max(
             (len(match.group(0)) for match in re.finditer(r"`+", full)),
             default=0,
@@ -293,7 +416,20 @@ def build_recovery_scaffold_from_user_texts(
         "new directives as scoped sub-tasks unless the user has explicitly revised",
         "the goal.",
     ]
-    return "\n".join(lines) + "\n"
+    return AnchorResult(
+        stated_goal=stated_goal,
+        anchor_mode=anchor_mode,
+        additional_goals=additional,
+        goal_sentences_total=total,
+        sentences_total=len(_split_sentences(first)),
+        unmatched_sentences=unmatched_sentences(first),
+        first_turn_chars=len(first),
+        full_truncated=full_truncated,
+        user_turns=total_user_turns,
+        turn=turn,
+        session_name=session_name,
+        markdown="\n".join(lines) + "\n",
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
