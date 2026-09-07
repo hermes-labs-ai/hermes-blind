@@ -1,0 +1,4 @@
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Ship the onboarding flow for the demo tenant and verify the clean install on a fresh machine. Add a smoke test that runs the installer end to end. Keep the public catalog boundary unchanged."}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Understood. Starting with the installer."}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Use the existing fixtures where you can."}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Will do."}]}}

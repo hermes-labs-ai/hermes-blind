@@ -1,0 +1,4 @@
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Hello. What would you like to build?"}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_synthetic", "content": "ok"}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "<system-reminder>Context loaded.</system-reminder>"}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Waiting."}]}}

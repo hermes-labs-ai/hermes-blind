@@ -14,3 +14,6 @@ dist/
 .ruff_cache/
 .mypy_cache/
 # Audit artifacts kept in repo under rubric-runs/ — not gitignored
+
+# Reliability Lab isolated dev venv for this clone (never shipped)
+/.venv/

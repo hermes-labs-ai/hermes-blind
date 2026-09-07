@@ -21,8 +21,9 @@ python -m build
 twine check dist/*
 ```
 
-Also install the built wheel in a clean environment and invoke both
-`hermes-blind --help` and `hermes-blind apply --help`.
+Also install the built wheel in a clean environment and invoke
+`hermes-blind --help`, `hermes-blind apply --help`, and
+`python -m hermes_blind.evidence --help`.
 
 ## Invariants
 
@@ -34,6 +35,7 @@ Also install the built wheel in a clean environment and invoke both
 - Do not present extraction recall as evidence of downstream model recovery.
 - Do not expose internal experiment harnesses through the public CLI.
 - Add a regression test for every parser, extraction, or output-shape fix.
+- Keep `build_anchor().markdown` byte-identical to `build_recovery_scaffold_from_user_texts()`; `ParseStats` observes, it never changes what an iterator yields.
 
 ## Release claims
 

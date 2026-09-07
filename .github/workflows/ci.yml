@@ -48,6 +48,9 @@ jobs:
           /tmp/isolated/bin/pip install dist/*.whl
           /tmp/isolated/bin/hermes-blind --help
           /tmp/isolated/bin/hermes-blind apply --help
+          /tmp/isolated/bin/python -m hermes_blind.evidence --help
+          /tmp/isolated/bin/python -m hermes_blind.evidence \
+            --session fixtures/lab/claude-first-turn.jsonl >/dev/null
           /tmp/isolated/bin/python -c "from hermes_blind import wrap, extract_disclosure, VARIANTS; \
             assert 'HERMES-BLIND' in wrap('x'); \
             assert wrap('y', variant='null') == 'y'; \
