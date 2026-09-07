@@ -243,7 +243,7 @@ def test_a_run_writes_nothing_and_needs_nothing_from_home(tmp_path) -> None:
         timeout=30,
     )
     assert completed.returncode == 0, completed.stderr
-    assert json.loads(completed.stdout)["status"] == "pass"
+    assert json.loads(completed.stdout)["status"] == "warn"  # one unmatched sentence, reported
     assert list(cwd.iterdir()) == []
     assert list(fake_home.iterdir()) == []
 
@@ -276,7 +276,7 @@ def test_cli_requires_an_explicit_session(capsys) -> None:
         evidence.main([])
     assert exit_info.value.code == 2
     capsys.readouterr()
-    assert evidence.main(["--session", str(FIXTURES / "claude-first-turn.jsonl")]) == 0
+    assert evidence.main(["--session", str(FIXTURES / "codex-first-turn.jsonl")]) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "pass"
     assert evidence.main(["--session", str(FIXTURES / "garbage.jsonl")]) == 1
     capsys.readouterr()
