@@ -34,6 +34,18 @@ python -m pip install hermes-blind
 
 Requires Python 3.10+.
 
+### Or load the skill as a local Claude Code plugin
+
+This repo ships a root `.claude-plugin/plugin.json`, so Claude Code can load
+its `hermes-blind` skill directly from a clone via the `--plugin-dir` flag —
+no marketplace and no MetaHub install required:
+
+```bash
+git clone https://github.com/hermes-labs-ai/hermes-blind
+cd hermes-blind
+claude --plugin-dir .
+```
+
 ## Recover a long agent session
 
 The lowest-friction path is to give your coding agent this instruction:
