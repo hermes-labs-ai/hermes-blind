@@ -9,15 +9,16 @@ makes no model calls, and sends no network requests
 (https://github.com/hermes-labs-ai/hermes-blind).
 
 1. Pick a runner: if `hermes-blind --help` works, use the bare `hermes-blind`
-   command below. Otherwise prefer `uvx hermes-blind` (zero-install, no PATH
-   changes) over `pipx install hermes-blind` unless the user wants it
-   installed persistently. Keep using whichever runner you picked for the
-   rest of these steps — `uvx hermes-blind --help` alone does not put
-   `hermes-blind` on PATH.
+   command below. Otherwise prefer `uvx hermes-blind==0.2.0` (zero-install,
+   no PATH changes) over `pipx install hermes-blind==0.2.0` unless the user
+   wants it installed persistently. Keep the exact version pin on either so
+   neither fetches an unreviewed newer release. Keep using whichever runner
+   you picked for the rest of these steps — `uvx hermes-blind==0.2.0 --help`
+   alone does not put `hermes-blind` on PATH.
 2. Find this session's local JSONL log (Claude Code: under
    `~/.claude/projects/`; Codex: under `~/.codex/sessions/`).
 3. Run, substituting the real session path, current turn number, and the
-   runner from step 1 (`hermes-blind ...` or `uvx hermes-blind ...`):
+   runner from step 1 (`hermes-blind ...` or `uvx hermes-blind==0.2.0 ...`):
    ```
    hermes-blind apply --session <path> --format auto --turn <N> --out recovery.md
    ```
