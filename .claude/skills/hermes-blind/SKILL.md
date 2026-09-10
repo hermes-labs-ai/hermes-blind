@@ -8,12 +8,16 @@ and writes a compact, inspectable recovery anchor. It is deterministic,
 makes no model calls, and sends no network requests
 (https://github.com/hermes-labs-ai/hermes-blind).
 
-1. Confirm `hermes-blind` is available: run `hermes-blind --help`. If it is
-   missing, use `uvx hermes-blind --help` (zero-install, no `pip install`
-   needed) or `pipx install hermes-blind`.
+1. Pick a runner: if `hermes-blind --help` works, use the bare `hermes-blind`
+   command below. Otherwise prefer `uvx hermes-blind` (zero-install, no PATH
+   changes) over `pipx install hermes-blind` unless the user wants it
+   installed persistently. Keep using whichever runner you picked for the
+   rest of these steps — `uvx hermes-blind --help` alone does not put
+   `hermes-blind` on PATH.
 2. Find this session's local JSONL log (Claude Code: under
    `~/.claude/projects/`; Codex: under `~/.codex/sessions/`).
-3. Run, substituting the real session path and current turn number:
+3. Run, substituting the real session path, current turn number, and the
+   runner from step 1 (`hermes-blind ...` or `uvx hermes-blind ...`):
    ```
    hermes-blind apply --session <path> --format auto --turn <N> --out recovery.md
    ```
