@@ -76,3 +76,23 @@ def test_documented_command_refuses_malformed_session(tmp_path, capsys):
     assert not out.exists(), "no anchor should be written when no user turn is found"
     err = capsys.readouterr().err
     assert "Traceback" not in err
+
+
+def test_latest_instruction_carries_a_fallback_for_an_older_pinned_runner():
+    """The skill pins an exact release; a newer flag must degrade, not hard-fail.
+
+    SKILL.md pins `uvx hermes-blind==X` so the agent never fetches an
+    unreviewed release. That pin and the flags the skill teaches move on
+    different schedules: a flag merged here is not on PyPI until the release
+    ships, so between the two an agent following step 2 verbatim gets
+    `error: unrecognized arguments: --latest` and exit 2. Step 3 must name
+    that case, so the agent falls back to --session instead of stopping.
+    """
+    text = SKILL_PATH.read_text(encoding="utf-8")
+    if "--latest" not in text:
+        return
+    assert "unrecognized arguments: --latest" in text, (
+        "SKILL.md teaches --latest but does not tell the agent what to do when "
+        "the pinned runner predates it"
+    )
+    assert "--session" in text, "the fallback must name the explicit --session path"
