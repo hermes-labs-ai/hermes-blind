@@ -58,13 +58,74 @@ class ParseStats:
             self.user_turns_before_first_assistant += 1
 
 
+# Claude Code wraps text it injects into user records in these tags: system
+# reminders, background-task notifications, `!` shell output, `/command`
+# stdout and its caveat, IDE context. They are not the user's words.
+_CLAUDE_INJECTED_TAG_RE = re.compile(
+    r"<(system-reminder|task-notification|local-command-stdout|local-command-stderr|"
+    r"local-command-caveat|bash-stdout|bash-stderr|ide_opened_file|ide_selection)"
+    r"(?:\s[^>]*)?>.*?</\1>\s*",
+    re.DOTALL,
+)
+# A slash command is logged as <command-name>/x</command-name>
+# <command-message>x</command-message> <command-args>…</command-args>.
+_CLAUDE_COMMAND_TAG_RE = re.compile(
+    r"<(command-name|command-message|command-args)(?:\s[^>]*)?>(.*?)</\1>\s*", re.DOTALL
+)
+_CLAUDE_INTERRUPTED_TEXTS = frozenset({
+    "[Request interrupted by user]",
+    "[Request interrupted by user for tool use]",
+})
+
+
+def _claude_user_text(obj: dict) -> str | None:
+    """The user-authored text of a Claude Code ``type: user`` record, or None.
+
+    None means the record is not a user turn: a tool result, a sidechain
+    (sub-agent) record, a meta record (slash-command output, its caveat,
+    skill expansions), a compaction summary, an interruption marker, or a
+    record that carries only injected context. A slash command is rendered as
+    the ``/name args`` the user typed. Text without any injected tag is
+    returned exactly as recorded.
+    """
+    if obj.get("isMeta") or obj.get("isSidechain") or obj.get("isCompactSummary"):
+        return None
+    content = obj.get("message", {}).get("content")
+    text = ""
+    if isinstance(content, str):
+        text = content
+    elif isinstance(content, list):
+        parts = [
+            p.get("text", "") for p in content
+            if isinstance(p, dict) and p.get("type") == "text"
+        ]
+        text = "\n".join(p for p in parts if p)
+    if "<" in text:
+        text = _CLAUDE_INJECTED_TAG_RE.sub("", text)
+        command: dict[str, str] = {}
+        def _take(match: re.Match[str]) -> str:
+            command[match.group(1)] = match.group(2).strip()
+            return ""
+        rest = _CLAUDE_COMMAND_TAG_RE.sub(_take, text)
+        if "command-name" in command:
+            head = " ".join(
+                s for s in (command["command-name"], command.get("command-args", "")) if s
+            )
+            text = head + ("\n" + rest.strip() if rest.strip() else "")
+    if not text.strip() or text.strip() in _CLAUDE_INTERRUPTED_TEXTS:
+        return None
+    return text
+
+
 def _iter_user_texts(
     jsonl_path: Path, stats: ParseStats | None = None
 ) -> Iterator[tuple[int, str]]:
-    """Yield (turn_index, user_message_text) for each user turn in a session JSONL.
+    """Yield (turn_index, user_message_text) for each user turn in a Claude Code
+    session JSONL (~/.claude/projects/<project>/<session>.jsonl).
 
-    Skips system-reminder injections and tool-result-only turns. Turn index
-    is 1-based and counts only real user turns (not tool results).
+    Only ``type: user`` records count; see :func:`_claude_user_text` for which
+    of those are user turns. Turn index is 1-based and counts only real user
+    turns (not tool results or injected records).
     """
     n = 0
     with open(jsonl_path, encoding="utf-8") as f:
@@ -82,25 +143,12 @@ def _iter_user_texts(
                     stats.unparseable_lines += 1
                 continue
             if obj.get("type") == "assistant" and stats is not None:
-                stats._seen_assistant = True
+                if not obj.get("isSidechain"):
+                    stats._seen_assistant = True
             if obj.get("type") != "user":
                 continue
-            content = obj.get("message", {}).get("content")
-            text = ""
-            if isinstance(content, str):
-                text = content
-            elif isinstance(content, list):
-                parts = [
-                    p.get("text", "") for p in content
-                    if isinstance(p, dict) and p.get("type") == "text"
-                ]
-                text = "\n".join(p for p in parts if p)
-            if not text.strip():
-                if stats is not None:
-                    stats.skipped_user_records += 1
-                continue
-            # Skip pure tool-result wrappers and system-reminder injections.
-            if "<system-reminder>" in text and len(text) < 500:
+            text = _claude_user_text(obj)
+            if text is None:
                 if stats is not None:
                     stats.skipped_user_records += 1
                 continue
@@ -119,6 +167,12 @@ def _iter_user_texts_codex(
     Codex can record a user turn as a response_item message, an
     event_msg/user_message, or both. When both adjacent extracted records
     carry identical text, yield the turn once.
+
+    Codex also persists the context it injects into the model's input as
+    ``role: user`` response_items — ``<environment_context>``,
+    ``<user_instructions>`` (AGENTS.md), ``<turn_aborted>`` and similar.
+    Those are skipped by their leading tag. An event_msg/user_message only
+    ever carries typed input, so it is never filtered.
     """
     n = 0
     previous_text: str | None = None
@@ -168,6 +222,8 @@ def _iter_user_texts_codex(
                         and isinstance(part.get("text"), str)
                     )
                 shape = "response_item"
+                if isinstance(text, str) and _CODEX_INJECTED_PREFIX_RE.match(text):
+                    text = ""
             if not isinstance(text, str) or not text.strip():
                 if stats is not None and shape:
                     stats.skipped_user_records += 1
@@ -182,8 +238,13 @@ def _iter_user_texts_codex(
             yield n, text
 
 
+# Codex writes injected context as a user message that opens with a snake_case
+# tag (``<environment_context>``, ``<user_instructions>``, ``<turn_aborted>``,
+# ``<permissions instructions>``). Typed input is never wrapped this way.
+_CODEX_INJECTED_PREFIX_RE = re.compile(r"\s*<[a-z][a-z0-9_]*(?: [a-z0-9_]+)*>")
+
 _CODEX_TOP_TYPES = {"session_meta", "turn_context", "event_msg",
-                    "response_item", "world_state"}
+                    "response_item", "compacted", "world_state"}
 
 
 def _sniff_format(jsonl_path: Path) -> str:
@@ -193,6 +254,8 @@ def _sniff_format(jsonl_path: Path) -> str:
             try:
                 obj = json.loads(line)
             except json.JSONDecodeError:
+                continue
+            if not isinstance(obj, dict):
                 continue
             if obj.get("type") in _CODEX_TOP_TYPES:
                 return "codex"

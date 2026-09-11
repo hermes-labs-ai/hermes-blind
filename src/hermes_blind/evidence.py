@@ -144,8 +144,11 @@ def _findings_for_stats(stats: ParseStats) -> list[dict[str, Any]]:
             finding(
                 "input.skipped-user-records",
                 "pass",
-                f"{stats.skipped_user_records} user record(s) carried no text and were skipped.",
-                "Tool results and short system-reminder wrappers are not user turns.",
+                f"{stats.skipped_user_records} user record(s) carried no user-authored text and were skipped.",
+                "Tool results, sub-agent (sidechain) records, meta records such as slash-command "
+                "output and skill expansions, compaction summaries, interruption markers, and "
+                "injected context (system reminders, task notifications, Codex environment "
+                "context and AGENTS.md instructions) are not user turns.",
             )
         )
     if stats.user_turns_before_first_assistant >= 2:

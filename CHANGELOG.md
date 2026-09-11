@@ -6,6 +6,42 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/). The 0.x line remains experimental;
 minor versions may change the public surface before 1.0.
 
+## [Unreleased]
+
+### Fixed
+- Claude Code session parsing now skips the records the current client
+  (2.1.x) writes into the log that are not user turns: `isMeta` records
+  (slash-command output, its caveat, skill expansions), `isSidechain`
+  sub-agent records, `isCompactSummary` compaction summaries,
+  `[Request interrupted by user]` markers, and text that is only injected
+  context (`<system-reminder>`, `<task-notification>`, `<local-command-*>`,
+  `<bash-std*>`, IDE context). A `/command args` record is kept as the
+  command the user typed. Previously a turn-1 record that also carried a
+  system reminder was either dropped whole (short) or anchored on the
+  reminder text (long).
+- Codex rollout parsing now skips the `role: user` items Codex persists for
+  injected context (`<environment_context>`, `<user_instructions>` carrying
+  AGENTS.md, `<turn_aborted>`, `<permissions instructions>`), which previously
+  became turn 1. Typed `user_message` events are never filtered. `compacted`
+  lines are recognized when sniffing the format, and a non-object first line
+  no longer breaks sniffing.
+
+### Added
+- `fixtures/lab/claude-current-format.jsonl`, `claude-slash-command-first.jsonl`
+  and `codex-current-format.jsonl`: hand-written fixtures in the current log
+  shapes, with regression tests over the iterators, the scaffold and the
+  evidence envelope.
+
+### Evidence boundary
+
+- This entry changes which records count as user turns; it does not change
+  how the anchor is rendered from those turns, and the existing fixtures
+  produce byte-identical output. Claude Code shapes were checked against
+  logs written by Claude Code 2.1.268 and the client's own record markers;
+  Codex shapes against the `openai/codex` rollout persistence policy and
+  contextual-message filter at the time of writing. Neither vendor documents
+  the log format as stable.
+
 ## [0.2.0] — 2026-09-07
 
 ### Added
