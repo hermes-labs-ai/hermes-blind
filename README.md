@@ -46,6 +46,34 @@ cd hermes-blind
 claude --plugin-dir .
 ```
 
+### Or install it as a Claude Code plugin from the marketplace
+
+The same repository root also serves as a Claude Code marketplace
+(`.claude-plugin/marketplace.json`), so the plugin installs without a
+checkout:
+
+```bash
+claude plugin marketplace add hermes-labs-ai/hermes-blind
+claude plugin install hermes-blind@hermes-blind
+```
+
+The marketplace entry points at the repository root itself — the same
+`.claude-plugin/plugin.json` used by `--plugin-dir .` above — so there is
+only one plugin package, and its version tracks `pyproject.toml` rather than
+being hand-maintained in the marketplace manifest. `claude plugin install`
+copies that whole directory into its own plugin cache, so the installed
+copy resolves `skills/hermes-blind/SKILL.md` from inside the cache, not from
+this checkout.
+
+Because the repository root is both the plugin and the marketplace,
+`claude plugin validate .` resolves to the marketplace manifest; pass each
+manifest explicitly to validate both:
+
+```bash
+claude plugin validate .claude-plugin/marketplace.json --strict
+claude plugin validate .claude-plugin/plugin.json --strict
+```
+
 ## Recover a long agent session
 
 The lowest-friction path is to give your coding agent this instruction:

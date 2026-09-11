@@ -68,8 +68,16 @@ def test_plugin_manifest_points_at_the_plugin_skill_directory():
 
 @pytest.mark.skipif(shutil.which("claude") is None, reason="claude CLI not installed")
 def test_plugin_validates_strict():
+    """Validate the plugin manifest itself.
+
+    Pass the manifest path, not ROOT: now that ROOT also holds
+    `.claude-plugin/marketplace.json`, `claude plugin validate ROOT` resolves
+    to the marketplace manifest instead (see
+    ``test_marketplace_manifest_validates_strict`` in test_marketplace.py) and
+    would silently stop exercising plugin.json's own strict validation.
+    """
     result = subprocess.run(
-        ["claude", "plugin", "validate", str(ROOT), "--strict"],
+        ["claude", "plugin", "validate", str(PLUGIN_MANIFEST), "--strict"],
         capture_output=True,
         text=True,
         check=False,
