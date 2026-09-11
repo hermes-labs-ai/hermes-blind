@@ -15,10 +15,19 @@ makes no model calls, and sends no network requests
    neither fetches an unreviewed newer release. Keep using whichever runner
    you picked for the rest of these steps — `uvx hermes-blind==0.2.0 --help`
    alone does not put `hermes-blind` on PATH.
-2. Find this session's local JSONL log (Claude Code: under
-   `~/.claude/projects/`; Codex: under `~/.codex/sessions/`).
-3. Run, substituting the real session path, current turn number, and the
-   runner from step 1 (`hermes-blind ...` or `uvx hermes-blind==0.2.0 ...`):
+2. Run from the session's working directory, substituting the current turn
+   number and the runner from step 1 (`hermes-blind ...` or
+   `uvx hermes-blind==0.2.0 ...`):
+   ```
+   hermes-blind apply --latest --format auto --turn <N> --out recovery.md
+   ```
+   `--latest` finds this session's log itself — the newest log under
+   `~/.claude/projects/<this directory>` or `~/.codex/sessions/` that has a
+   user turn — and prints the file it chose to stderr. It respects
+   `CLAUDE_CONFIG_DIR` and `CODEX_HOME`.
+3. If `--latest` exits 1 (nothing found, or two logs it cannot tell apart),
+   find the log by hand — Claude Code: under `~/.claude/projects/`; Codex:
+   under `~/.codex/sessions/` — and pass it instead of `--latest`:
    ```
    hermes-blind apply --session <path> --format auto --turn <N> --out recovery.md
    ```

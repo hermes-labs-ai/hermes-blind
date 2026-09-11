@@ -27,6 +27,25 @@ minor versions may change the public surface before 1.0.
   no longer breaks sniffing.
 
 ### Added
+- `hermes-blind apply --latest` finds this session's log instead of requiring
+  the path, removing the hand lookup that was step 2 of the skill. It takes
+  the most recently modified log that the existing parser finds a user turn
+  in — so sub-agent-only logs are passed over — from
+  `$CLAUDE_CONFIG_DIR/projects/` (default `~/.claude/projects/`) under the
+  directory named after the current working directory with `/` replaced by
+  `-`, or from `$CODEX_HOME/sessions/` (default `~/.codex/sessions/`)
+  matching `**/rollout-*.jsonl`. `--cwd PATH` scopes the Claude Code search
+  to another project directory; without it, a directory that has no log of
+  its own widens the search to every project directory. The chosen file is
+  printed to stderr. Nothing is guessed: no candidate, no candidate carrying
+  a user turn, and two candidates sharing the newest modification time each
+  exit 1 naming what was searched and what to pass instead. `--latest` and
+  `--session` are mutually exclusive; `--session` is unchanged.
+- `python -m hermes_blind.evidence` accepts the same `--latest` and `--cwd`.
+  Discovery happens in the CLI: the emitter still reads only the one path it
+  is handed, and still reports it by basename.
+- Both `SKILL.md` copies now run `--latest` as the default path, with the
+  manual `--session` lookup kept as the documented fallback.
 - `fixtures/lab/claude-current-format.jsonl`, `claude-slash-command-first.jsonl`
   and `codex-current-format.jsonl`: hand-written fixtures in the current log
   shapes, with regression tests over the iterators, the scaffold and the
@@ -34,6 +53,15 @@ minor versions may change the public surface before 1.0.
 
 ### Evidence boundary
 
+- `--latest` only chooses a path; extraction, rendering and every existing
+  command are untouched, and no existing output changes. Discovery is tested
+  against fake home directories built in `tmp_path`, not against a real
+  machine's logs — the `/` → `-` project-directory encoding and the Codex
+  `sessions/**/rollout-*.jsonl` layout are taken from the clients' documented
+  behavior, and neither vendor documents those locations as stable. A second,
+  punctuation-folded directory-name candidate is tried when the first does
+  not exist, and a lookup that matches nothing refuses rather than widen past
+  an explicit `--cwd`.
 - This entry changes which records count as user turns; it does not change
   how the anchor is rendered from those turns, and the existing fixtures
   produce byte-identical output. Claude Code shapes were checked against

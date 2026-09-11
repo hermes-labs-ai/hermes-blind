@@ -14,11 +14,13 @@ unambiguous — and it reports rather than repairs: an unparseable line, an
 ambiguous first turn, or a truncated full-text anchor becomes a finding, and
 a file with no user turn is the product's own error, exit 1.
 
-The session path is always explicit. Nothing is discovered under the home
-directory, nothing is written, nothing leaves the machine, and the path is
-reported by basename only.
+The session is named by `--session`, or found by `--latest` — the same
+lookup `apply --latest` performs, which reads candidate logs to rank them and
+prints the one it chose to stderr. Nothing is written, nothing leaves the
+machine, and the path is reported in the envelope by basename only.
 
     python -m hermes_blind.evidence --session fixtures/lab/claude-first-turn.jsonl
+    python -m hermes_blind.evidence --latest
     python -m hermes_blind.evidence --session rollout.jsonl --format codex --anchor-mode full
 
 Added in v0.2.0.
@@ -389,11 +391,23 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m hermes_blind.evidence",
         description=(
-            "Extract a recovery anchor from an explicit session JSONL and print the result as a "
-            "Reliability Lab envelope. No path is discovered; nothing is written."
+            "Extract a recovery anchor from a session JSONL and print the result as a "
+            "Reliability Lab envelope. Nothing is written."
         ),
     )
-    parser.add_argument("--session", required=True, help="Explicit path to a session JSONL.")
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--session", help="Explicit path to a session JSONL.")
+    source.add_argument(
+        "--latest",
+        action="store_true",
+        help="Find this session's log automatically, as `apply --latest` does. "
+             "Mutually exclusive with --session.",
+    )
+    parser.add_argument(
+        "--cwd",
+        help="Project directory whose Claude Code log --latest should look for. "
+             "Default: the current directory.",
+    )
     parser.add_argument("--format", default="auto", dest="fmt", choices=("auto", "claude", "codex"))
     parser.add_argument(
         "--anchor-mode", default="goals", choices=("first-sentence", "goals", "full")
@@ -401,7 +415,28 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--turn", type=int, default=9, help="Label only, as in `apply`.")
     args = parser.parse_args(argv)
 
-    result = envelope_for(Path(args.session), fmt=args.fmt, anchor_mode=args.anchor_mode, turn=args.turn)
+    if args.cwd and not args.latest:
+        print("hermes-blind evidence: --cwd only applies with --latest", file=sys.stderr)
+        return 2
+
+    fmt = args.fmt
+    if args.latest:
+        from hermes_blind.discover import DiscoveryError, describe, discover_latest
+
+        try:
+            found = discover_latest(
+                fmt=args.fmt,
+                cwd=Path(args.cwd).expanduser() if args.cwd else None,
+            )
+        except DiscoveryError as error:
+            print(f"hermes-blind evidence: {error}", file=sys.stderr)
+            return 1
+        print(f"hermes-blind evidence: {describe(found)}", file=sys.stderr)
+        session, fmt = found.path, found.fmt
+    else:
+        session = Path(args.session)
+
+    result = envelope_for(session, fmt=fmt, anchor_mode=args.anchor_mode, turn=args.turn)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return result["exitCode"]
 
