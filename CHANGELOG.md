@@ -6,7 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/). The 0.x line remains experimental;
 minor versions may change the public surface before 1.0.
 
-## [Unreleased]
+## [0.3.0] — 2026-09-11
 
 ### Fixed
 - Claude Code session parsing now skips the records the current client
