@@ -11,6 +11,7 @@ pyproject.toml rather than being hand-maintained separately.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -76,3 +77,63 @@ def test_plugin_validates_strict():
     assert result.returncode == 0, (
         f"claude plugin validate --strict failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
     )
+
+
+_UVX_SPEC = re.compile(r"\b(?:uvx|uv tool run)\s+([^\s`]+)")
+_PIPX_SPEC = re.compile(r"\bpipx install\s+([^\s`]+)")
+
+
+def _specs(pattern: re.Pattern[str]) -> list[str]:
+    """Every package spec both SKILL.md copies hand to a fetching runner."""
+    specs = []
+    for skill in (PROJECT_SKILL, PLUGIN_SKILL):
+        found = pattern.findall(skill.read_text(encoding="utf-8"))
+        assert found, f"{skill} no longer documents a {pattern.pattern} runner"
+        specs.extend(found)
+    return specs
+
+
+def _uvx_specs() -> list[str]:
+    return _specs(_UVX_SPEC)
+
+
+def test_skill_uvx_runner_pins_the_released_version():
+    """An unpinned `uvx`/`pipx install hermes-blind` would fetch the newest release."""
+    from packaging.requirements import Requirement
+
+    version = _pyproject_field("version")
+    for spec in _uvx_specs() + _specs(_PIPX_SPEC):
+        req = Requirement(spec)
+        assert req.name == "hermes-blind", spec
+        assert str(req.specifier) == f"=={version}", (
+            f"runner spec {spec!r} must pin exactly hermes-blind=={version}"
+        )
+        assert not (req.url or req.extras or req.marker), spec
+
+
+@pytest.mark.skipif(
+    os.environ.get("HERMES_BLIND_LIVE_UVX") != "1" or shutil.which("uvx") is None,
+    reason="live PyPI check; set HERMES_BLIND_LIVE_UVX=1 with uvx installed",
+)
+def test_skill_uvx_runner_executes_the_pinned_release(tmp_path):
+    """Run the documented step-3 command through the pinned uvx runner.
+
+    Opt-in because it resolves the pinned release from the package index.
+    """
+    (spec,) = set(_uvx_specs())
+    out = tmp_path / "recovery.md"
+    run = subprocess.run(
+        ["uvx", spec, "apply",
+         "--session", str(ROOT / "fixtures" / "lab" / "claude-first-turn.jsonl"),
+         "--format", "auto", "--turn", "9", "--out", str(out)],
+        cwd=tmp_path, capture_output=True, text=True, check=False,
+    )
+    assert run.returncode == 0, run.stderr
+    assert "Ship the onboarding flow" in out.read_text(encoding="utf-8")
+
+    installed = subprocess.run(
+        ["uvx", "--from", spec, "python", "-c",
+         "import importlib.metadata as m; print(m.version('hermes-blind'))"],
+        cwd=tmp_path, capture_output=True, text=True, check=True,
+    )
+    assert installed.stdout.strip() == _pyproject_field("version")
