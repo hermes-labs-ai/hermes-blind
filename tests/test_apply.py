@@ -321,3 +321,160 @@ def test_cli_anchor_mode_and_format_flags(tmp_path, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "full turn-1 text:" in out
+
+
+# --- current Claude Code / Codex log shapes (2026-09-11) ---
+
+FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "lab"
+
+
+def _write_rows(tmp: Path, name: str, rows: list[dict]) -> Path:
+    p = tmp / name
+    p.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    return p
+
+
+def test_claude_current_format_first_turn_skips_injected_records():
+    from hermes_blind.apply import ParseStats, _iter_user_texts
+
+    stats = ParseStats()
+    turns = list(_iter_user_texts(FIXTURES / "claude-current-format.jsonl", stats))
+    texts = [t for _, t in turns]
+    assert texts[0].startswith("Ship the onboarding flow")
+    # Slash commands are user turns, rendered as typed; the rest is not.
+    assert texts == [
+        texts[0],
+        "/status",
+        "/loop 5m check the installer job",
+        "Use the existing fixtures where you can.",
+    ]
+    assert stats.user_turns == 4
+    # tool result, caveat, command stdout, skill expansion, task notification,
+    # interruption, sidechain turn, compaction summary.
+    assert stats.skipped_user_records == 8
+    assert stats.user_turns_before_first_assistant == 1
+    md = build_recovery_scaffold(FIXTURES / "claude-current-format.jsonl", turn=9)
+    assert 'stated_goal: "Ship the onboarding flow' in md
+    assert "user turns observed: 4" in md
+    assert "delete the old database" not in md  # the compaction summary's competing goal
+    assert "Expanded skill body" not in md
+
+
+def test_claude_session_opening_with_slash_command_anchors_on_the_command():
+    md = build_recovery_scaffold(FIXTURES / "claude-slash-command-first.jsonl", turn=3)
+    assert (
+        'stated_goal: "/research Compare uv and pipx for the installer and propose one"'
+        in md
+    )
+    assert "Expanded instructions" not in md
+    assert "user turns observed: 2" in md
+
+
+def test_claude_meta_sidechain_and_compact_summary_records_are_not_turns(tmp_path):
+    rows = [
+        {"type": "user", "isMeta": True, "message": {"content": "meta first"}},
+        {"type": "user", "isSidechain": True, "message": {"content": "sub-agent prompt"}},
+        {"type": "user", "isCompactSummary": True,
+         "message": {"content": "This session is being continued. Summary: rewrite everything."}},
+        {"type": "user", "message": {"content": "Fix the login bug."}},
+    ]
+    md = build_recovery_scaffold(_write_rows(tmp_path, "s.jsonl", rows), turn=2)
+    assert 'stated_goal: "Fix the login bug"' in md
+    assert "user turns observed: 1" in md
+
+
+def test_claude_inline_system_reminder_is_stripped_not_dropped(tmp_path):
+    """Older logs put the reminder in the same content list as the typed text.
+
+    Before: a short record was dropped whole and a long one kept the reminder
+    as the anchor. Now the reminder is removed and the typed text is the turn.
+    """
+    reminder = "<system-reminder>\nContents of CLAUDE.md: always run the tests.\n</system-reminder>"
+    rows = [
+        {"type": "user", "message": {"content": [
+            {"type": "text", "text": reminder},
+            {"type": "text", "text": "Ship the release."},
+        ]}},
+        {"type": "user", "message": {"content": [{"type": "text", "text": reminder}]}},
+        {"type": "user", "message": {"content": reminder + "\nVerify it." + reminder * 20}},
+    ]
+    from hermes_blind.apply import ParseStats, _iter_user_texts
+
+    stats = ParseStats()
+    texts = [t for _, t in _iter_user_texts(_write_rows(tmp_path, "s.jsonl", rows), stats)]
+    assert texts == ["Ship the release.", "Verify it."]
+    assert stats.skipped_user_records == 1
+
+
+def test_claude_interruption_markers_and_task_notifications_are_not_turns(tmp_path):
+    rows = [
+        {"type": "user", "message": {"content": "[Request interrupted by user for tool use]"}},
+        {"type": "user", "message": {"content": [{"type": "text", "text": "[Request interrupted by user]"}]}},
+        {"type": "user", "message": {"content": "<task-notification>\n<task-id>x</task-id>\n<status>completed</status>\n</task-notification>"}},
+        {"type": "user", "message": {"content": "Add the smoke test."}},
+    ]
+    md = build_recovery_scaffold(_write_rows(tmp_path, "s.jsonl", rows), turn=2)
+    assert 'stated_goal: "Add the smoke test"' in md
+    assert "user turns observed: 1" in md
+
+
+def test_claude_plain_text_with_angle_brackets_is_untouched(tmp_path):
+    text = "Render <b>bold</b> and keep <unknown-tag>this</unknown-tag> verbatim."
+    rows = [{"type": "user", "message": {"content": text}}]
+    from hermes_blind.apply import _iter_user_texts
+
+    assert [t for _, t in _iter_user_texts(_write_rows(tmp_path, "s.jsonl", rows))] == [text]
+
+
+def test_codex_current_format_skips_injected_context_items():
+    from hermes_blind.apply import ParseStats, _iter_user_texts_codex
+
+    stats = ParseStats()
+    texts = [t for _, t in _iter_user_texts_codex(FIXTURES / "codex-current-format.jsonl", stats)]
+    assert len(texts) == 2
+    assert texts[0].startswith("Ship the onboarding flow")
+    assert texts[1] == "Use the existing fixtures where you can."
+    # environment_context, user_instructions, turn_aborted
+    assert stats.skipped_user_records == 3
+    assert stats.user_turns_before_first_assistant == 1
+    md = build_recovery_scaffold(FIXTURES / "codex-current-format.jsonl", turn=9)
+    assert "user turns observed: 2" in md
+    assert "AGENTS.md" not in md
+    assert "Delete the old database" not in md
+
+
+def test_codex_legacy_rollout_without_event_msgs_still_skips_injected_items(tmp_path):
+    rows = [
+        {"type": "session_meta", "payload": {"id": "x"}},
+        _response_item_user("<environment_context>\n<cwd>/tmp</cwd>\n</environment_context>"),
+        _response_item_user("<user_instructions>\nRun everything twice.\n</user_instructions>"),
+        _response_item_user("Build the initial release."),
+    ]
+    md = build_recovery_scaffold(_write_rows(tmp_path, "rollout.jsonl", rows), turn=3)
+    assert 'stated_goal: "Build the initial release"' in md
+    assert "user turns observed: 1" in md
+
+
+def test_codex_event_msg_user_message_is_never_filtered(tmp_path):
+    """Typed input that happens to start with a tag still counts when Codex
+    recorded it as a user_message event."""
+    rows = [
+        {"type": "session_meta", "payload": {"id": "x"}},
+        {"type": "event_msg", "payload": {"type": "user_message", "message": "<plan> ship it"}},
+        _response_item_user("<plan> ship it"),
+    ]
+    md = build_recovery_scaffold(_write_rows(tmp_path, "rollout.jsonl", rows), turn=2)
+    assert 'stated_goal: "<plan> ship it"' in md
+    assert "user turns observed: 1" in md
+
+
+def test_auto_sniff_handles_current_first_lines(tmp_path):
+    from hermes_blind.apply import _sniff_format
+
+    assert _sniff_format(FIXTURES / "claude-current-format.jsonl") == "claude"  # ai-title
+    assert _sniff_format(FIXTURES / "codex-current-format.jsonl") == "codex"
+    rows = [{"type": "compacted", "payload": {"message": "x"}}]
+    assert _sniff_format(_write_rows(tmp_path, "c.jsonl", rows)) == "codex"
+    p = tmp_path / "list-first.jsonl"
+    p.write_text('[1, 2]\n{"type": "user", "message": {"content": "hi"}}\n', encoding="utf-8")
+    assert _sniff_format(p) == "claude"

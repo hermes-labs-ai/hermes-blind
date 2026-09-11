@@ -79,7 +79,12 @@ The generated markdown starts like this:
 - user turns observed: 9
 ```
 
-`--format auto` recognizes Claude Code and Codex JSONL shapes. The default
+`--format auto` recognizes Claude Code and Codex JSONL shapes. Records that
+are not user turns — tool results, sub-agent (sidechain) turns, slash-command
+output and skill expansions, compaction summaries, and the context both tools
+inject into the log (system reminders, task notifications, Codex environment
+context and `AGENTS.md` instructions) — are skipped, so turn 1 is the first
+thing the user typed; a `/command` is kept as typed. The default
 `goals` mode preserves up to 12 goal-carrying sentences from the first user
 turn; `first-sentence` keeps the compact legacy behavior and `full` includes
 up to 4,000 characters.

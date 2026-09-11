@@ -31,7 +31,16 @@ def _finding(result: dict, identifier: str) -> dict:
 # --- the refactor changes nothing -----------------------------------------
 
 
-@pytest.mark.parametrize("name", ["claude-first-turn.jsonl", "codex-first-turn.jsonl", "long-competing.jsonl"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "claude-first-turn.jsonl",
+        "codex-first-turn.jsonl",
+        "long-competing.jsonl",
+        "claude-current-format.jsonl",
+        "codex-current-format.jsonl",
+    ],
+)
 @pytest.mark.parametrize("anchor_mode", ["goals", "first-sentence", "full"])
 def test_structured_anchor_renders_byte_identical_markdown(name, anchor_mode) -> None:
     path = FIXTURES / name
@@ -97,6 +106,32 @@ def test_codex_first_turn_is_extracted_once_despite_being_recorded_twice() -> No
     ]
     assert "input.ambiguous-initial-turn" not in _ids(result)
     assert "anchor.unmatched-sentences" not in _ids(result)
+
+
+def test_current_claude_code_log_skips_injected_records_and_says_so() -> None:
+    result = envelope_for(FIXTURES / "claude-current-format.jsonl")
+    assert result["exitCode"] == 0
+    assert result["data"]["format"]["detected"] == "claude"
+    assert result["data"]["stats"]["userTurns"] == 4
+    assert result["data"]["stats"]["skippedUserRecords"] == 8
+    assert result["data"]["stats"]["userTurnsBeforeFirstAssistant"] == 1
+    assert "input.ambiguous-initial-turn" not in _ids(result)
+    skipped = _finding(result, "input.skipped-user-records")
+    assert skipped["severity"] == "pass"
+    assert skipped["summary"].startswith("8 user record(s)")
+    assert result["data"]["anchor"]["statedGoal"].startswith("Ship the onboarding flow")
+    assert "delete the old database" not in json.dumps(result["data"])
+
+
+def test_current_codex_rollout_skips_injected_context_items() -> None:
+    result = envelope_for(FIXTURES / "codex-current-format.jsonl")
+    assert result["exitCode"] == 0
+    assert result["data"]["format"]["detected"] == "codex"
+    assert result["data"]["stats"]["userTurns"] == 2
+    assert result["data"]["stats"]["skippedUserRecords"] == 3
+    assert "input.ambiguous-initial-turn" not in _ids(result)
+    assert result["data"]["anchor"]["statedGoal"].startswith("Ship the onboarding flow")
+    assert "AGENTS.md" not in json.dumps(result["data"])
 
 
 def test_later_competing_instructions_do_not_replace_the_first_turn() -> None:
