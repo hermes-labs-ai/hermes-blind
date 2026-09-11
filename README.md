@@ -50,13 +50,31 @@ claude --plugin-dir .
 
 The lowest-friction path is to give your coding agent this instruction:
 
-> Install `hermes-blind`. Find the JSONL log for this Claude Code or Codex
-> session, then run `hermes-blind apply --session <path> --format auto
+> Install `hermes-blind`, then run `hermes-blind apply --latest --format auto
 > --turn <current-turn-number> --out recovery.md`. Show me the generated
 > anchor and use it to restate my original goals before continuing. Do not
 > overwrite files or share the session text.
 
 Or run it directly:
+
+```bash
+hermes-blind apply \
+  --latest \
+  --format auto \
+  --turn 9 \
+  --out recovery.md
+```
+
+`--latest` finds this session's log instead of asking you to: the most
+recently modified log under `~/.claude/projects/<this directory>` — or
+`~/.codex/sessions/**/rollout-*.jsonl` — that contains a user turn, so
+sub-agent-only logs are passed over. It prints the file it chose to stderr,
+honors `CLAUDE_CONFIG_DIR` and `CODEX_HOME`, and exits 1 with what it looked
+at rather than guessing when nothing matches or two logs are
+indistinguishable. `--cwd PATH` points it at another project directory.
+
+Naming the file yourself still works exactly as before, and is the fallback
+when discovery refuses:
 
 ```bash
 hermes-blind apply \
@@ -128,6 +146,7 @@ from a checkout:
 
 ```bash
 python -m hermes_blind.evidence --session /path/to/session.jsonl --format auto
+python -m hermes_blind.evidence --latest
 ```
 
 Extraction is unchanged; what is added is observability. Lines that do not
@@ -135,8 +154,9 @@ parse are counted and reported (`input.unparseable-lines`) instead of only
 being skipped; two user turns before the first assistant reply are reported
 (`input.ambiguous-initial-turn`) and turn 1 is still the anchor; a file with
 no user turn is the product's own error, exit 1, with no anchor invented. The
-session path is always explicit — nothing is discovered under your home
-directory — and it appears in the record by basename only.
+emitter reads exactly the one file it is given and discovers nothing; `--latest`
+resolves the path first, in the CLI, and prints it. Either way the path appears
+in the record by basename only.
 
 ## Add evidence constraints to an evaluation prompt
 

@@ -238,8 +238,17 @@ def test_only_the_explicit_session_path_is_opened(monkeypatch) -> None:
 
 
 def test_the_emitter_never_discovers_sessions_or_touches_home() -> None:
+    """Discovery is the CLI's job; the emitter still only reads what it is handed.
+
+    `--latest` resolves a path in `main()`, before `envelope_for` is called, so
+    the emitter half of the module must stay free of any home-directory lookup.
+    `test_only_the_explicit_session_path_is_opened` proves the same invariant at
+    runtime; this one keeps a lookup from being written into the emitter at all.
+    """
     source = (REPO_ROOT / "src" / "hermes_blind" / "evidence.py").read_text(encoding="utf-8")
-    assert not re.search(r"Path\.home|expanduser|\.claude|\.codex|glob\(", source)
+    emitter, separator, _cli = source.partition("# CLI\n")
+    assert separator, "the CLI section banner moved; re-anchor this test"
+    assert not re.search(r"Path\.home|expanduser|\.claude|\.codex|glob\(", emitter)
 
 
 def test_paths_are_reported_by_basename_only(tmp_path) -> None:

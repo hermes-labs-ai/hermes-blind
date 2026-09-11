@@ -13,6 +13,7 @@ Two modes:
 
 2. Build a recovery scaffold for a Claude Code or Codex session JSONL:
 
+       hermes-blind apply --latest --turn 9 --out recovered.md
        hermes-blind apply --session ~/.claude/projects/<id>.jsonl \\
                           --turn 9 --out recovered.md
 
@@ -20,6 +21,9 @@ Two modes:
    user turn, and emits a markdown recovery block. Deterministic — no model
    or network call. The output can contain user text; inspect it before
    sharing.
+
+   ``--latest`` finds this session's log instead of being handed one; see
+   hermes_blind.discover. ``--session`` stays explicit and is unchanged.
 
 The two modes are mutually exclusive; mode 1 is the default.
 """
@@ -510,9 +514,24 @@ def main(argv: list[str] | None = None) -> int:
         "--prompt",
         help="Prompt text to wrap (mode 1). If absent, reads from stdin.",
     )
-    p.add_argument(
+    source = p.add_mutually_exclusive_group()
+    source.add_argument(
         "--session",
         help="Path to a Claude Code or Codex session JSONL (recovery mode).",
+    )
+    source.add_argument(
+        "--latest",
+        action="store_true",
+        help="Recovery mode on this session's log, found automatically: the "
+             "newest log under ~/.claude/projects/<this directory> (or "
+             "~/.codex/sessions), skipping logs with no user turn. Honors "
+             "CLAUDE_CONFIG_DIR and CODEX_HOME. Mutually exclusive with "
+             "--session.",
+    )
+    p.add_argument(
+        "--cwd",
+        help="Project directory whose Claude Code log --latest should look "
+             "for. Default: the current directory.",
     )
     p.add_argument(
         "--turn", type=int, default=9,
@@ -546,17 +565,38 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = p.parse_args(argv)
 
-    if args.session:
+    if args.cwd and not args.latest:
+        print("hermes-blind apply: --cwd only applies with --latest", file=sys.stderr)
+        return 2
+
+    session: Path | None = None
+    fmt = args.fmt
+    if args.latest:
+        # Imported here so the scaffold-only mode never touches discovery.
+        from hermes_blind.discover import DiscoveryError, describe, discover_latest
+        try:
+            found = discover_latest(
+                fmt=args.fmt,
+                cwd=Path(args.cwd).expanduser() if args.cwd else None,
+            )
+        except DiscoveryError as e:
+            print(f"hermes-blind apply: {e}", file=sys.stderr)
+            return 1
+        print(f"hermes-blind apply: {describe(found)}", file=sys.stderr)
+        session, fmt = found.path, found.fmt
+    elif args.session:
+        session = Path(args.session).expanduser()
+
+    if session is not None:
         try:
             md = build_recovery_scaffold(
-                Path(args.session).expanduser(), args.turn,
-                anchor_mode=args.anchor_mode, fmt=args.fmt,
+                session, args.turn, anchor_mode=args.anchor_mode, fmt=fmt,
             )
         except (FileNotFoundError, ValueError) as e:
             print(f"hermes-blind apply: {e}", file=sys.stderr)
             return 1
         if args.out:
-            session_path = Path(args.session).expanduser().resolve()
+            session_path = session.resolve()
             out_path = Path(args.out).expanduser()
             if out_path.resolve() == session_path:
                 print(
@@ -581,7 +621,7 @@ def main(argv: list[str] | None = None) -> int:
     prompt = args.prompt if args.prompt is not None else sys.stdin.read()
     if not prompt:
         print("hermes-blind apply: no prompt provided "
-              "(use --prompt, stdin, or --session)", file=sys.stderr)
+              "(use --prompt, stdin, --session or --latest)", file=sys.stderr)
         return 2
     sys.stdout.write(wrap(prompt, variant=args.variant))
     return 0
