@@ -25,8 +25,15 @@ makes no model calls, and sends no network requests
    `~/.claude/projects/<this directory>` or `~/.codex/sessions/` that has a
    user turn — and prints the file it chose to stderr. It respects
    `CLAUDE_CONFIG_DIR` and `CODEX_HOME`.
-3. If `--latest` exits 1 (nothing found, or two logs it cannot tell apart),
-   find the log by hand — Claude Code: under `~/.claude/projects/`; Codex:
+3. If the `--latest` run fails for any reason, fall back to naming the log
+   yourself. Three cases, all handled the same way:
+   - it exits 1 — nothing found, or two logs it cannot tell apart;
+   - it exits 2 with `unrecognized arguments: --latest` — the runner you
+     picked in step 1 is pinned to a release older than 0.3.0, which is when
+     `--latest` was added. Do not bump the pin to chase it; use `--session`.
+   - anything else non-zero.
+
+   Find the log by hand — Claude Code: under `~/.claude/projects/`; Codex:
    under `~/.codex/sessions/` — and pass it instead of `--latest`:
    ```
    hermes-blind apply --session <path> --format auto --turn <N> --out recovery.md
