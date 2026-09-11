@@ -9,6 +9,15 @@ minor versions may change the public surface before 1.0.
 ## [Unreleased]
 
 ### Fixed
+- The agent skill no longer dead-ends when the runner it pinned predates a flag
+  it teaches. Both `SKILL.md` copies pin an exact release (`hermes-blind==0.2.0`
+  on this branch) so an agent never fetches an unreviewed one, but step 2 teaches
+  `apply --latest`, which did not exist before 0.3.0: an agent following the skill
+  verbatim got `error: unrecognized arguments: --latest` and exit 2, and step 3's
+  fallback only covered exit 1. Step 3 now covers any non-zero `--latest` run and
+  names the older-pin case explicitly, so the agent falls back to `--session`
+  instead of stopping. `tests/test_agent_skill.py` guards the pairing: a skill
+  that teaches `--latest` must document that fallback.
 - Claude Code session parsing now skips the records the current client
   (2.1.x) writes into the log that are not user turns: `isMeta` records
   (slash-command output, its caveat, skill expansions), `isSidechain`
