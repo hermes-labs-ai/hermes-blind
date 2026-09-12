@@ -74,6 +74,34 @@ claude plugin validate .claude-plugin/marketplace.json --strict
 claude plugin validate .claude-plugin/plugin.json --strict
 ```
 
+### Or install it from an external catalog
+
+The two paths above both resolve the plugin at the repository root, which
+only works for a marketplace that ships inside this repository. A catalog in
+a *different* repository — such as
+[hermes-labs-ai/claude-plugins](https://github.com/hermes-labs-ai/claude-plugins)
+— has to name this repository by URL, and no cross-repo source type in Claude
+Code 2.1.x can install a plugin that lives at a repository root: a `github`
+source clones over SSH with no HTTPS fallback, and a `git-subdir` source with
+`path: "."` copies the top-level files but drops every subdirectory,
+including `skills/`. Both leave `claude plugin install` reporting success.
+
+`claude-plugin/` is the package for that case — the same manifest and the
+same skill, in a subdirectory a `git-subdir` source can name:
+
+```json
+{
+  "source": "git-subdir",
+  "url": "https://github.com/hermes-labs-ai/hermes-blind.git",
+  "path": "claude-plugin",
+  "ref": "main"
+}
+```
+
+Its files are kept byte-identical to the root package by
+`tests/test_marketplace.py`; edit the root copies and mirror them, never the
+other way round.
+
 ## Recover a long agent session
 
 The lowest-friction path is to give your coding agent this instruction:
