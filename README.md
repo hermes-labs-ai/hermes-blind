@@ -46,6 +46,62 @@ cd hermes-blind
 claude --plugin-dir .
 ```
 
+### Or install it as a Claude Code plugin from the marketplace
+
+The same repository root also serves as a Claude Code marketplace
+(`.claude-plugin/marketplace.json`), so the plugin installs without a
+checkout:
+
+```bash
+claude plugin marketplace add hermes-labs-ai/hermes-blind
+claude plugin install hermes-blind@hermes-blind
+```
+
+The marketplace entry points at the repository root itself — the same
+`.claude-plugin/plugin.json` used by `--plugin-dir .` above — so there is
+only one plugin package, and its version tracks `pyproject.toml` rather than
+being hand-maintained in the marketplace manifest. `claude plugin install`
+copies that whole directory into its own plugin cache, so the installed
+copy resolves `skills/hermes-blind/SKILL.md` from inside the cache, not from
+this checkout.
+
+Because the repository root is both the plugin and the marketplace,
+`claude plugin validate .` resolves to the marketplace manifest; pass each
+manifest explicitly to validate both:
+
+```bash
+claude plugin validate .claude-plugin/marketplace.json --strict
+claude plugin validate .claude-plugin/plugin.json --strict
+```
+
+### Or install it from an external catalog
+
+The two paths above both resolve the plugin at the repository root, which
+only works for a marketplace that ships inside this repository. A catalog in
+a *different* repository — such as
+[hermes-labs-ai/claude-plugins](https://github.com/hermes-labs-ai/claude-plugins)
+— has to name this repository by URL, and no cross-repo source type in Claude
+Code 2.1.x can install a plugin that lives at a repository root: a `github`
+source clones over SSH with no HTTPS fallback, and a `git-subdir` source with
+`path: "."` copies the top-level files but drops every subdirectory,
+including `skills/`. Both leave `claude plugin install` reporting success.
+
+`claude-plugin/` is the package for that case — the same manifest and the
+same skill, in a subdirectory a `git-subdir` source can name:
+
+```json
+{
+  "source": "git-subdir",
+  "url": "https://github.com/hermes-labs-ai/hermes-blind.git",
+  "path": "claude-plugin",
+  "ref": "main"
+}
+```
+
+Its files are kept byte-identical to the root package by
+`tests/test_marketplace.py`; edit the root copies and mirror them, never the
+other way round.
+
 ## Recover a long agent session
 
 The lowest-friction path is to give your coding agent this instruction:
@@ -232,6 +288,24 @@ pytest -q
 python -m build
 twine check dist/*
 ```
+
+### Local `--latest` validation before tagging a release
+
+`--latest` discovery is covered in CI only against fake home directories
+under `tmp_path`. Before tagging a release that touches `apply.py`,
+`discover.py`, or the `--latest`/`--cwd` flags, run it once against a real
+`~/.claude/projects` or `~/.codex/sessions` tree from a project that actually
+used Claude Code or Codex:
+
+```bash
+pip install -e .
+cd /path/to/a/real/claude-code-or-codex/project
+hermes-blind apply --latest --format auto --turn <N> --out /tmp/recovery.md
+```
+
+Use the current turn number for `<N>` and inspect `/tmp/recovery.md`. A wrong
+guess exits 1 and names what it searched rather than failing silently; if
+that happens, fall back to `--session /path/to/session.jsonl` (see above).
 
 See the [changelog](https://github.com/hermes-labs-ai/hermes-blind/blob/main/CHANGELOG.md)
 for release history and the
