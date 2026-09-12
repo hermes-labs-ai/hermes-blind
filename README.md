@@ -261,6 +261,24 @@ python -m build
 twine check dist/*
 ```
 
+### Local `--latest` validation before tagging a release
+
+`--latest` discovery is covered in CI only against fake home directories
+under `tmp_path`. Before tagging a release that touches `apply.py`,
+`discover.py`, or the `--latest`/`--cwd` flags, run it once against a real
+`~/.claude/projects` or `~/.codex/sessions` tree from a project that actually
+used Claude Code or Codex:
+
+```bash
+pip install -e .
+cd /path/to/a/real/claude-code-or-codex/project
+hermes-blind apply --latest --format auto --turn <N> --out /tmp/recovery.md
+```
+
+Use the current turn number for `<N>` and inspect `/tmp/recovery.md`. A wrong
+guess exits 1 and names what it searched rather than failing silently; if
+that happens, fall back to `--session /path/to/session.jsonl` (see above).
+
 See the [changelog](https://github.com/hermes-labs-ai/hermes-blind/blob/main/CHANGELOG.md)
 for release history and the
 [contribution guide](https://github.com/hermes-labs-ai/hermes-blind/blob/main/CONTRIBUTING.md)
