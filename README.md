@@ -76,7 +76,7 @@ directory. For the two supported log formats, start with:
 # Claude Code (one project directory, newest files first)
 ls -t ~/.claude/projects/*/*.jsonl | head
 
-# Codex (newest rollout files first)
+# Codex (oldest-to-newest; the newest rollout is the last line)
 find ~/.codex/sessions -type f -name 'rollout-*.jsonl' -print 2>/dev/null \
   | sort | tail
 ```
