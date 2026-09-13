@@ -34,6 +34,33 @@ python -m pip install hermes-blind
 
 Requires Python 3.10+.
 
+### Install the agent skill in Claude Code, Codex, or Gemini CLI
+
+The repository root is one portable
+[Agent Plugin](https://agent-plugins.org/): a `plugin.json` manifest and the
+`skills/hermes-blind/SKILL.md` skill. Each host installs that same root through
+its own native command; none of them gets a separate copy of the skill.
+
+| Host | Install | Read back |
+| --- | --- | --- |
+| Claude Code | `claude plugin marketplace add hermes-labs-ai/hermes-blind`<br>`claude plugin install hermes-blind@hermes-blind` | `claude plugin list` |
+| OpenAI Codex CLI | `codex plugin marketplace add hermes-labs-ai/hermes-blind`<br>`codex plugin add hermes-blind@hermes-blind` | `codex plugin list` |
+| Gemini CLI | `gemini extensions install https://github.com/hermes-labs-ai/hermes-blind` | `gemini skills list` |
+
+What each host reads:
+
+- Claude Code reads `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json`.
+- Codex reads the repo marketplace `.agents/plugins/marketplace.json` (its
+  entry is `./`, the root) and the portable `plugin.json`.
+- Gemini CLI reads `gemini-extension.json` and discovers the bundled skill
+  under `skills/`.
+
+The skill then runs the `hermes-blind` command through `uvx` or `pipx` at the
+exact pinned release, so installing the skill does not install the Python
+package. Recovery reads Claude Code and Codex session logs only; in Gemini CLI
+the skill can recover a Claude Code or Codex session you name, but not the
+Gemini session itself.
+
 ### Or load the skill as a local Claude Code plugin
 
 This repo ships a root `.claude-plugin/plugin.json`, so Claude Code can load

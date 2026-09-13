@@ -6,6 +6,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/). The 0.x line remains experimental;
 minor versions may change the public surface before 1.0.
 
+## [Unreleased]
+
+### Added
+- The repository root now installs natively in OpenAI Codex CLI and Gemini CLI
+  as well as Claude Code, from the same `skills/hermes-blind/SKILL.md`: a
+  portable Agent Plugins 1.0.0 `plugin.json`, a Codex repo marketplace at
+  `.agents/plugins/marketplace.json` whose entry is the root itself, and a
+  `gemini-extension.json`. No skill copy is added, and
+  `tests/test_cross_agent_install.py` ties every manifest's name, version and
+  description to `pyproject.toml` and installs through the real CLIs when they
+  are present. Package runtime is unchanged.
+
 ## [0.3.0] — 2026-09-11
 
 ### Fixed
