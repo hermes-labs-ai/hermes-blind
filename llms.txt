@@ -32,6 +32,17 @@ Agent skill (the repository root is one portable Agent Plugin):
 `--turn` is metadata, not a detector threshold. Recovery output may contain
 user text and should be reviewed before sharing.
 
+## Find a supported session log
+
+Blind reads an explicit local JSONL path and currently supports Claude Code
+and Codex session logs:
+
+    ls -t ~/.claude/projects/*/*.jsonl | head
+    find ~/.codex/sessions -type f -name 'rollout-*.jsonl' -print 2>/dev/null | sort | tail
+
+Gemini CLI installs expose the package's prompt and skill surfaces; Gemini
+session-log recovery is not currently supported.
+
 ## Evidence boundary
 
 The 0.1.3 release validates package mechanics, JSONL parsing, anchor modes,
