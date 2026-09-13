@@ -67,6 +67,24 @@ The generated markdown starts like this:
 - user turns observed: 9
 ```
 
+### Find the session log
+
+Blind reads an explicit local JSONL path; it does not search your home
+directory. For the two supported log formats, start with:
+
+```bash
+# Claude Code (one project directory, newest files first)
+ls -t ~/.claude/projects/*/*.jsonl | head
+
+# Codex (newest rollout files first)
+find ~/.codex/sessions -type f -name 'rollout-*.jsonl' -print 2>/dev/null \
+  | sort | tail
+```
+
+Pass the selected path to `--session` and review the generated file before
+sharing it. Gemini CLI installs are supported for the package's prompt and
+skill surfaces; Gemini session-log recovery is not currently supported.
+
 `--format auto` recognizes Claude Code and Codex JSONL shapes. The default
 `goals` mode preserves up to 12 goal-carrying sentences from the first user
 turn; `first-sentence` keeps the compact legacy behavior and `full` includes
