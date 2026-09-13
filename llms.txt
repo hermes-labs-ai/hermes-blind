@@ -16,6 +16,14 @@ The package is deterministic. It makes no model calls and no network requests.
 
     pip install hermes-blind
 
+Agent skill (the repository root is one portable Agent Plugin):
+
+    claude plugin marketplace add hermes-labs-ai/hermes-blind
+    claude plugin install hermes-blind@hermes-blind
+    codex plugin marketplace add hermes-labs-ai/hermes-blind
+    codex plugin add hermes-blind@hermes-blind
+    gemini extensions install https://github.com/hermes-labs-ai/hermes-blind --ref main
+
 ## Recovery example
 
     hermes-blind apply --session rollout.jsonl --format auto \

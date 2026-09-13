@@ -13,6 +13,7 @@ Two modes:
 
 2. Build a recovery scaffold for a Claude Code or Codex session JSONL:
 
+       hermes-blind apply --latest --turn 9 --out recovered.md
        hermes-blind apply --session ~/.claude/projects/<id>.jsonl \\
                           --turn 9 --out recovered.md
 
@@ -20,6 +21,9 @@ Two modes:
    user turn, and emits a markdown recovery block. Deterministic — no model
    or network call. The output can contain user text; inspect it before
    sharing.
+
+   ``--latest`` finds this session's log instead of being handed one; see
+   hermes_blind.discover. ``--session`` stays explicit and is unchanged.
 
 The two modes are mutually exclusive; mode 1 is the default.
 """
@@ -58,13 +62,74 @@ class ParseStats:
             self.user_turns_before_first_assistant += 1
 
 
+# Claude Code wraps text it injects into user records in these tags: system
+# reminders, background-task notifications, `!` shell output, `/command`
+# stdout and its caveat, IDE context. They are not the user's words.
+_CLAUDE_INJECTED_TAG_RE = re.compile(
+    r"<(system-reminder|task-notification|local-command-stdout|local-command-stderr|"
+    r"local-command-caveat|bash-stdout|bash-stderr|ide_opened_file|ide_selection)"
+    r"(?:\s[^>]*)?>.*?</\1>\s*",
+    re.DOTALL,
+)
+# A slash command is logged as <command-name>/x</command-name>
+# <command-message>x</command-message> <command-args>…</command-args>.
+_CLAUDE_COMMAND_TAG_RE = re.compile(
+    r"<(command-name|command-message|command-args)(?:\s[^>]*)?>(.*?)</\1>\s*", re.DOTALL
+)
+_CLAUDE_INTERRUPTED_TEXTS = frozenset({
+    "[Request interrupted by user]",
+    "[Request interrupted by user for tool use]",
+})
+
+
+def _claude_user_text(obj: dict) -> str | None:
+    """The user-authored text of a Claude Code ``type: user`` record, or None.
+
+    None means the record is not a user turn: a tool result, a sidechain
+    (sub-agent) record, a meta record (slash-command output, its caveat,
+    skill expansions), a compaction summary, an interruption marker, or a
+    record that carries only injected context. A slash command is rendered as
+    the ``/name args`` the user typed. Text without any injected tag is
+    returned exactly as recorded.
+    """
+    if obj.get("isMeta") or obj.get("isSidechain") or obj.get("isCompactSummary"):
+        return None
+    content = obj.get("message", {}).get("content")
+    text = ""
+    if isinstance(content, str):
+        text = content
+    elif isinstance(content, list):
+        parts = [
+            p.get("text", "") for p in content
+            if isinstance(p, dict) and p.get("type") == "text"
+        ]
+        text = "\n".join(p for p in parts if p)
+    if "<" in text:
+        text = _CLAUDE_INJECTED_TAG_RE.sub("", text)
+        command: dict[str, str] = {}
+        def _take(match: re.Match[str]) -> str:
+            command[match.group(1)] = match.group(2).strip()
+            return ""
+        rest = _CLAUDE_COMMAND_TAG_RE.sub(_take, text)
+        if "command-name" in command:
+            head = " ".join(
+                s for s in (command["command-name"], command.get("command-args", "")) if s
+            )
+            text = head + ("\n" + rest.strip() if rest.strip() else "")
+    if not text.strip() or text.strip() in _CLAUDE_INTERRUPTED_TEXTS:
+        return None
+    return text
+
+
 def _iter_user_texts(
     jsonl_path: Path, stats: ParseStats | None = None
 ) -> Iterator[tuple[int, str]]:
-    """Yield (turn_index, user_message_text) for each user turn in a session JSONL.
+    """Yield (turn_index, user_message_text) for each user turn in a Claude Code
+    session JSONL (~/.claude/projects/<project>/<session>.jsonl).
 
-    Skips system-reminder injections and tool-result-only turns. Turn index
-    is 1-based and counts only real user turns (not tool results).
+    Only ``type: user`` records count; see :func:`_claude_user_text` for which
+    of those are user turns. Turn index is 1-based and counts only real user
+    turns (not tool results or injected records).
     """
     n = 0
     with open(jsonl_path, encoding="utf-8") as f:
@@ -82,25 +147,12 @@ def _iter_user_texts(
                     stats.unparseable_lines += 1
                 continue
             if obj.get("type") == "assistant" and stats is not None:
-                stats._seen_assistant = True
+                if not obj.get("isSidechain"):
+                    stats._seen_assistant = True
             if obj.get("type") != "user":
                 continue
-            content = obj.get("message", {}).get("content")
-            text = ""
-            if isinstance(content, str):
-                text = content
-            elif isinstance(content, list):
-                parts = [
-                    p.get("text", "") for p in content
-                    if isinstance(p, dict) and p.get("type") == "text"
-                ]
-                text = "\n".join(p for p in parts if p)
-            if not text.strip():
-                if stats is not None:
-                    stats.skipped_user_records += 1
-                continue
-            # Skip pure tool-result wrappers and system-reminder injections.
-            if "<system-reminder>" in text and len(text) < 500:
+            text = _claude_user_text(obj)
+            if text is None:
                 if stats is not None:
                     stats.skipped_user_records += 1
                 continue
@@ -119,6 +171,12 @@ def _iter_user_texts_codex(
     Codex can record a user turn as a response_item message, an
     event_msg/user_message, or both. When both adjacent extracted records
     carry identical text, yield the turn once.
+
+    Codex also persists the context it injects into the model's input as
+    ``role: user`` response_items — ``<environment_context>``,
+    ``<user_instructions>`` (AGENTS.md), ``<turn_aborted>`` and similar.
+    Those are skipped by their leading tag. An event_msg/user_message only
+    ever carries typed input, so it is never filtered.
     """
     n = 0
     previous_text: str | None = None
@@ -168,6 +226,8 @@ def _iter_user_texts_codex(
                         and isinstance(part.get("text"), str)
                     )
                 shape = "response_item"
+                if isinstance(text, str) and _CODEX_INJECTED_PREFIX_RE.match(text):
+                    text = ""
             if not isinstance(text, str) or not text.strip():
                 if stats is not None and shape:
                     stats.skipped_user_records += 1
@@ -182,8 +242,13 @@ def _iter_user_texts_codex(
             yield n, text
 
 
+# Codex writes injected context as a user message that opens with a snake_case
+# tag (``<environment_context>``, ``<user_instructions>``, ``<turn_aborted>``,
+# ``<permissions instructions>``). Typed input is never wrapped this way.
+_CODEX_INJECTED_PREFIX_RE = re.compile(r"\s*<[a-z][a-z0-9_]*(?: [a-z0-9_]+)*>")
+
 _CODEX_TOP_TYPES = {"session_meta", "turn_context", "event_msg",
-                    "response_item", "world_state"}
+                    "response_item", "compacted", "world_state"}
 
 
 def _sniff_format(jsonl_path: Path) -> str:
@@ -193,6 +258,8 @@ def _sniff_format(jsonl_path: Path) -> str:
             try:
                 obj = json.loads(line)
             except json.JSONDecodeError:
+                continue
+            if not isinstance(obj, dict):
                 continue
             if obj.get("type") in _CODEX_TOP_TYPES:
                 return "codex"
@@ -447,9 +514,24 @@ def main(argv: list[str] | None = None) -> int:
         "--prompt",
         help="Prompt text to wrap (mode 1). If absent, reads from stdin.",
     )
-    p.add_argument(
+    source = p.add_mutually_exclusive_group()
+    source.add_argument(
         "--session",
         help="Path to a Claude Code or Codex session JSONL (recovery mode).",
+    )
+    source.add_argument(
+        "--latest",
+        action="store_true",
+        help="Recovery mode on this session's log, found automatically: the "
+             "newest log under ~/.claude/projects/<this directory> (or "
+             "~/.codex/sessions), skipping logs with no user turn. Honors "
+             "CLAUDE_CONFIG_DIR and CODEX_HOME. Mutually exclusive with "
+             "--session.",
+    )
+    p.add_argument(
+        "--cwd",
+        help="Project directory whose Claude Code log --latest should look "
+             "for. Default: the current directory.",
     )
     p.add_argument(
         "--turn", type=int, default=9,
@@ -483,17 +565,38 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = p.parse_args(argv)
 
-    if args.session:
+    if args.cwd and not args.latest:
+        print("hermes-blind apply: --cwd only applies with --latest", file=sys.stderr)
+        return 2
+
+    session: Path | None = None
+    fmt = args.fmt
+    if args.latest:
+        # Imported here so the scaffold-only mode never touches discovery.
+        from hermes_blind.discover import DiscoveryError, describe, discover_latest
+        try:
+            found = discover_latest(
+                fmt=args.fmt,
+                cwd=Path(args.cwd).expanduser() if args.cwd else None,
+            )
+        except DiscoveryError as e:
+            print(f"hermes-blind apply: {e}", file=sys.stderr)
+            return 1
+        print(f"hermes-blind apply: {describe(found)}", file=sys.stderr)
+        session, fmt = found.path, found.fmt
+    elif args.session:
+        session = Path(args.session).expanduser()
+
+    if session is not None:
         try:
             md = build_recovery_scaffold(
-                Path(args.session).expanduser(), args.turn,
-                anchor_mode=args.anchor_mode, fmt=args.fmt,
+                session, args.turn, anchor_mode=args.anchor_mode, fmt=fmt,
             )
         except (FileNotFoundError, ValueError) as e:
             print(f"hermes-blind apply: {e}", file=sys.stderr)
             return 1
         if args.out:
-            session_path = Path(args.session).expanduser().resolve()
+            session_path = session.resolve()
             out_path = Path(args.out).expanduser()
             if out_path.resolve() == session_path:
                 print(
@@ -518,7 +621,7 @@ def main(argv: list[str] | None = None) -> int:
     prompt = args.prompt if args.prompt is not None else sys.stdin.read()
     if not prompt:
         print("hermes-blind apply: no prompt provided "
-              "(use --prompt, stdin, or --session)", file=sys.stderr)
+              "(use --prompt, stdin, --session or --latest)", file=sys.stderr)
         return 2
     sys.stdout.write(wrap(prompt, variant=args.variant))
     return 0

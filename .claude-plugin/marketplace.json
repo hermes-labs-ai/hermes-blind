@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hermes-blind",
+  "description": "The Hermes Blind Claude Code plugin from Hermes Labs.",
+  "owner": {
+    "name": "Hermes Labs",
+    "email": "roli@hermes-labs.ai",
+    "url": "https://github.com/hermes-labs-ai"
+  },
+  "plugins": [
+    {
+      "name": "hermes-blind",
+      "source": ".",
+      "description": "Local recovery anchors for Claude Code and Codex sessions, plus evidence-gated evaluation prompts",
+      "category": "productivity",
+      "homepage": "https://hermes-labs.ai/open-source"
+    }
+  ]
+}

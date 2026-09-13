@@ -6,6 +6,98 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/). The 0.x line remains experimental;
 minor versions may change the public surface before 1.0.
 
+## [Unreleased]
+
+### Added
+- The repository root now installs natively in OpenAI Codex CLI and Gemini CLI
+  as well as Claude Code, from the same `skills/hermes-blind/SKILL.md`: a
+  portable Agent Plugins 1.0.0 `plugin.json`, a Codex repo marketplace at
+  `.agents/plugins/marketplace.json` whose entry is the root itself, and a
+  `gemini-extension.json`. No skill copy is added, and
+  `tests/test_cross_agent_install.py` ties every manifest's name, version and
+  description to `pyproject.toml` and installs through the real CLIs when they
+  are present. Package runtime is unchanged.
+
+### Fixed
+- The documented Gemini CLI install now passes `--ref main`. Without a ref,
+  `gemini extensions install <github-url>` installs the latest GitHub release
+  archive; v0.3.0 predates `gemini-extension.json`, so the unpinned command
+  failed with `Configuration file not found`. A test keeps every documented
+  Gemini install command pinned to a ref.
+
+## [0.3.0] — 2026-09-11
+
+### Fixed
+- The agent skill no longer dead-ends when the runner it pinned predates a flag
+  it teaches. Both `SKILL.md` copies pin an exact release (`hermes-blind==0.2.0`
+  on this branch) so an agent never fetches an unreviewed one, but step 2 teaches
+  `apply --latest`, which did not exist before 0.3.0: an agent following the skill
+  verbatim got `error: unrecognized arguments: --latest` and exit 2, and step 3's
+  fallback only covered exit 1. Step 3 now covers any non-zero `--latest` run and
+  names the older-pin case explicitly, so the agent falls back to `--session`
+  instead of stopping. `tests/test_agent_skill.py` guards the pairing: a skill
+  that teaches `--latest` must document that fallback.
+- Claude Code session parsing now skips the records the current client
+  (2.1.x) writes into the log that are not user turns: `isMeta` records
+  (slash-command output, its caveat, skill expansions), `isSidechain`
+  sub-agent records, `isCompactSummary` compaction summaries,
+  `[Request interrupted by user]` markers, and text that is only injected
+  context (`<system-reminder>`, `<task-notification>`, `<local-command-*>`,
+  `<bash-std*>`, IDE context). A `/command args` record is kept as the
+  command the user typed. Previously a turn-1 record that also carried a
+  system reminder was either dropped whole (short) or anchored on the
+  reminder text (long).
+- Codex rollout parsing now skips the `role: user` items Codex persists for
+  injected context (`<environment_context>`, `<user_instructions>` carrying
+  AGENTS.md, `<turn_aborted>`, `<permissions instructions>`), which previously
+  became turn 1. Typed `user_message` events are never filtered. `compacted`
+  lines are recognized when sniffing the format, and a non-object first line
+  no longer breaks sniffing.
+
+### Added
+- `hermes-blind apply --latest` finds this session's log instead of requiring
+  the path, removing the hand lookup that was step 2 of the skill. It takes
+  the most recently modified log that the existing parser finds a user turn
+  in — so sub-agent-only logs are passed over — from
+  `$CLAUDE_CONFIG_DIR/projects/` (default `~/.claude/projects/`) under the
+  directory named after the current working directory with `/` replaced by
+  `-`, or from `$CODEX_HOME/sessions/` (default `~/.codex/sessions/`)
+  matching `**/rollout-*.jsonl`. `--cwd PATH` scopes the Claude Code search
+  to another project directory; without it, a directory that has no log of
+  its own widens the search to every project directory. The chosen file is
+  printed to stderr. Nothing is guessed: no candidate, no candidate carrying
+  a user turn, and two candidates sharing the newest modification time each
+  exit 1 naming what was searched and what to pass instead. `--latest` and
+  `--session` are mutually exclusive; `--session` is unchanged.
+- `python -m hermes_blind.evidence` accepts the same `--latest` and `--cwd`.
+  Discovery happens in the CLI: the emitter still reads only the one path it
+  is handed, and still reports it by basename.
+- Both `SKILL.md` copies now run `--latest` as the default path, with the
+  manual `--session` lookup kept as the documented fallback.
+- `fixtures/lab/claude-current-format.jsonl`, `claude-slash-command-first.jsonl`
+  and `codex-current-format.jsonl`: hand-written fixtures in the current log
+  shapes, with regression tests over the iterators, the scaffold and the
+  evidence envelope.
+
+### Evidence boundary
+
+- `--latest` only chooses a path; extraction, rendering and every existing
+  command are untouched, and no existing output changes. Discovery is tested
+  against fake home directories built in `tmp_path`, not against a real
+  machine's logs — the `/` → `-` project-directory encoding and the Codex
+  `sessions/**/rollout-*.jsonl` layout are taken from the clients' documented
+  behavior, and neither vendor documents those locations as stable. A second,
+  punctuation-folded directory-name candidate is tried when the first does
+  not exist, and a lookup that matches nothing refuses rather than widen past
+  an explicit `--cwd`.
+- This entry changes which records count as user turns; it does not change
+  how the anchor is rendered from those turns, and the existing fixtures
+  produce byte-identical output. Claude Code shapes were checked against
+  logs written by Claude Code 2.1.268 and the client's own record markers;
+  Codex shapes against the `openai/codex` rollout persistence policy and
+  contextual-message filter at the time of writing. Neither vendor documents
+  the log format as stable.
+
 ## [0.2.0] — 2026-09-07
 
 ### Added

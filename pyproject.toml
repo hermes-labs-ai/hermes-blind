@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hermes-blind"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local recovery anchors for Claude Code and Codex sessions, plus evidence-gated evaluation prompts"
 readme = "README.md"
 requires-python = ">=3.10"

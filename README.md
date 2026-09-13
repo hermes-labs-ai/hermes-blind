@@ -34,17 +34,133 @@ python -m pip install hermes-blind
 
 Requires Python 3.10+.
 
+### Install the agent skill in Claude Code, Codex, or Gemini CLI
+
+The repository root is one portable
+[Agent Plugin](https://agent-plugins.org/): a `plugin.json` manifest and the
+`skills/hermes-blind/SKILL.md` skill. Each host installs that same root through
+its own native command; none of them gets a separate copy of the skill.
+
+| Host | Install | Read back |
+| --- | --- | --- |
+| Claude Code | `claude plugin marketplace add hermes-labs-ai/hermes-blind`<br>`claude plugin install hermes-blind@hermes-blind` | `claude plugin list` |
+| OpenAI Codex CLI | `codex plugin marketplace add hermes-labs-ai/hermes-blind`<br>`codex plugin add hermes-blind@hermes-blind` | `codex plugin list` |
+| Gemini CLI | `gemini extensions install https://github.com/hermes-labs-ai/hermes-blind --ref main` | `gemini skills list` |
+
+What each host reads:
+
+- Claude Code reads `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json`.
+- Codex reads the repo marketplace `.agents/plugins/marketplace.json` (its
+  entry is `./`, the root) and the portable `plugin.json`.
+- Gemini CLI reads `gemini-extension.json` and discovers the bundled skill
+  under `skills/`. Keep `--ref main`: without a ref, Gemini CLI installs the
+  latest GitHub release archive, and releases up to v0.3.0 predate
+  `gemini-extension.json`, so that install fails with
+  `Configuration file not found`.
+
+The skill then runs the `hermes-blind` command through `uvx` or `pipx` at the
+exact pinned release, so installing the skill does not install the Python
+package. Recovery reads Claude Code and Codex session logs only; in Gemini CLI
+the skill can recover a Claude Code or Codex session you name, but not the
+Gemini session itself.
+
+### Or load the skill as a local Claude Code plugin
+
+This repo ships a root `.claude-plugin/plugin.json`, so Claude Code can load
+its `hermes-blind` skill directly from a clone via the `--plugin-dir` flag —
+no marketplace and no MetaHub install required:
+
+```bash
+git clone https://github.com/hermes-labs-ai/hermes-blind
+cd hermes-blind
+claude --plugin-dir .
+```
+
+### Or install it as a Claude Code plugin from the marketplace
+
+The same repository root also serves as a Claude Code marketplace
+(`.claude-plugin/marketplace.json`), so the plugin installs without a
+checkout:
+
+```bash
+claude plugin marketplace add hermes-labs-ai/hermes-blind
+claude plugin install hermes-blind@hermes-blind
+```
+
+The marketplace entry points at the repository root itself — the same
+`.claude-plugin/plugin.json` used by `--plugin-dir .` above — so there is
+only one plugin package, and its version tracks `pyproject.toml` rather than
+being hand-maintained in the marketplace manifest. `claude plugin install`
+copies that whole directory into its own plugin cache, so the installed
+copy resolves `skills/hermes-blind/SKILL.md` from inside the cache, not from
+this checkout.
+
+Because the repository root is both the plugin and the marketplace,
+`claude plugin validate .` resolves to the marketplace manifest; pass each
+manifest explicitly to validate both:
+
+```bash
+claude plugin validate .claude-plugin/marketplace.json --strict
+claude plugin validate .claude-plugin/plugin.json --strict
+```
+
+### Or install it from an external catalog
+
+The two paths above both resolve the plugin at the repository root, which
+only works for a marketplace that ships inside this repository. A catalog in
+a *different* repository — such as
+[hermes-labs-ai/claude-plugins](https://github.com/hermes-labs-ai/claude-plugins)
+— has to name this repository by URL, and no cross-repo source type in Claude
+Code 2.1.x can install a plugin that lives at a repository root: a `github`
+source clones over SSH with no HTTPS fallback, and a `git-subdir` source with
+`path: "."` copies the top-level files but drops every subdirectory,
+including `skills/`. Both leave `claude plugin install` reporting success.
+
+`claude-plugin/` is the package for that case — the same manifest and the
+same skill, in a subdirectory a `git-subdir` source can name:
+
+```json
+{
+  "source": "git-subdir",
+  "url": "https://github.com/hermes-labs-ai/hermes-blind.git",
+  "path": "claude-plugin",
+  "ref": "main"
+}
+```
+
+Its files are kept byte-identical to the root package by
+`tests/test_marketplace.py`; edit the root copies and mirror them, never the
+other way round.
+
 ## Recover a long agent session
 
 The lowest-friction path is to give your coding agent this instruction:
 
-> Install `hermes-blind`. Find the JSONL log for this Claude Code or Codex
-> session, then run `hermes-blind apply --session <path> --format auto
+> Install `hermes-blind`, then run `hermes-blind apply --latest --format auto
 > --turn <current-turn-number> --out recovery.md`. Show me the generated
 > anchor and use it to restate my original goals before continuing. Do not
 > overwrite files or share the session text.
 
 Or run it directly:
+
+```bash
+hermes-blind apply \
+  --latest \
+  --format auto \
+  --turn 9 \
+  --out recovery.md
+```
+
+`--latest` finds this session's log instead of asking you to: the most
+recently modified log under `~/.claude/projects/<this directory>` — or
+`~/.codex/sessions/**/rollout-*.jsonl` — that contains a user turn, so
+sub-agent-only logs are passed over. It prints the file it chose to stderr,
+honors `CLAUDE_CONFIG_DIR` and `CODEX_HOME`, and exits 1 with what it looked
+at rather than guessing when nothing matches or two logs are
+indistinguishable. `--cwd PATH` points it at another project directory.
+
+Naming the file yourself still works exactly as before, and is the fallback
+when discovery refuses:
 
 ```bash
 hermes-blind apply \
@@ -70,7 +186,8 @@ The generated markdown starts like this:
 ### Find the session log
 
 Blind reads an explicit local JSONL path; it does not search your home
-directory. For the two supported log formats, start with:
+directory (`--latest` above does that for you). To pick a path by hand for
+the two supported log formats, start with:
 
 ```bash
 # Claude Code (one project directory, newest files first)
@@ -85,7 +202,12 @@ Pass the selected path to `--session` and review the generated file before
 sharing it. Gemini CLI installs are supported for the package's prompt and
 skill surfaces; Gemini session-log recovery is not currently supported.
 
-`--format auto` recognizes Claude Code and Codex JSONL shapes. The default
+`--format auto` recognizes Claude Code and Codex JSONL shapes. Records that
+are not user turns — tool results, sub-agent (sidechain) turns, slash-command
+output and skill expansions, compaction summaries, and the context both tools
+inject into the log (system reminders, task notifications, Codex environment
+context and `AGENTS.md` instructions) — are skipped, so turn 1 is the first
+thing the user typed; a `/command` is kept as typed. The default
 `goals` mode preserves up to 12 goal-carrying sentences from the first user
 turn; `first-sentence` keeps the compact legacy behavior and `full` includes
 up to 4,000 characters.
@@ -129,6 +251,7 @@ from a checkout:
 
 ```bash
 python -m hermes_blind.evidence --session /path/to/session.jsonl --format auto
+python -m hermes_blind.evidence --latest
 ```
 
 Extraction is unchanged; what is added is observability. Lines that do not
@@ -136,8 +259,9 @@ parse are counted and reported (`input.unparseable-lines`) instead of only
 being skipped; two user turns before the first assistant reply are reported
 (`input.ambiguous-initial-turn`) and turn 1 is still the anchor; a file with
 no user turn is the product's own error, exit 1, with no anchor invented. The
-session path is always explicit — nothing is discovered under your home
-directory — and it appears in the record by basename only.
+emitter reads exactly the one file it is given and discovers nothing; `--latest`
+resolves the path first, in the CLI, and prints it. Either way the path appears
+in the record by basename only.
 
 ## Add evidence constraints to an evaluation prompt
 
@@ -213,6 +337,24 @@ pytest -q
 python -m build
 twine check dist/*
 ```
+
+### Local `--latest` validation before tagging a release
+
+`--latest` discovery is covered in CI only against fake home directories
+under `tmp_path`. Before tagging a release that touches `apply.py`,
+`discover.py`, or the `--latest`/`--cwd` flags, run it once against a real
+`~/.claude/projects` or `~/.codex/sessions` tree from a project that actually
+used Claude Code or Codex:
+
+```bash
+pip install -e .
+cd /path/to/a/real/claude-code-or-codex/project
+hermes-blind apply --latest --format auto --turn <N> --out /tmp/recovery.md
+```
+
+Use the current turn number for `<N>` and inspect `/tmp/recovery.md`. A wrong
+guess exits 1 and names what it searched rather than failing silently; if
+that happens, fall back to `--session /path/to/session.jsonl` (see above).
 
 See the [changelog](https://github.com/hermes-labs-ai/hermes-blind/blob/main/CHANGELOG.md)
 for release history and the

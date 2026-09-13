@@ -1,9 +1,11 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "hermes-blind",
   "version": "0.3.0",
   "description": "Local recovery anchors for Claude Code and Codex sessions, plus evidence-gated evaluation prompts",
   "author": { "name": "Hermes Labs", "email": "roli@hermes-labs.ai" },
   "homepage": "https://hermes-labs.ai/open-source",
   "repository": "https://github.com/hermes-labs-ai/hermes-blind",
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": ["session-recovery", "agent-skills", "claude-code", "codex", "gemini-cli"]
 }
