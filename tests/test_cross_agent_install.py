@@ -93,6 +93,21 @@ def test_no_host_ships_its_own_skill_copy():
         assert not extra.exists(), f"{extra} would be a second, driftable skill surface"
 
 
+def test_documented_gemini_install_pins_a_ref():
+    """An unpinned GitHub install takes the latest release, which may predate the manifest.
+
+    `gemini extensions install <github-url>` prefers the latest GitHub release
+    archive; v0.3.0 has no gemini-extension.json, so the unpinned command fails
+    with `Configuration file not found` even though main is installable.
+    """
+    pattern = re.compile(r"gemini extensions install https://github\.com/hermes-labs-ai/hermes-blind[^\n`]*")
+    for doc in (ROOT / "README.md", ROOT / "llms.txt"):
+        commands = pattern.findall(doc.read_text(encoding="utf-8"))
+        assert commands, f"{doc.name} no longer documents the Gemini install"
+        for command in commands:
+            assert "--ref " in command, f"{doc.name}: {command!r} must pass --ref"
+
+
 def _package(tmp_path: Path) -> Path:
     """The tracked install surface, without local build or venv state."""
     pkg = tmp_path / "hermes-blind"

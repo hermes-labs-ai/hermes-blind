@@ -18,6 +18,13 @@ minor versions may change the public surface before 1.0.
   description to `pyproject.toml` and installs through the real CLIs when they
   are present. Package runtime is unchanged.
 
+### Fixed
+- The documented Gemini CLI install now passes `--ref main`. Without a ref,
+  `gemini extensions install <github-url>` installs the latest GitHub release
+  archive; v0.3.0 predates `gemini-extension.json`, so the unpinned command
+  failed with `Configuration file not found`. A test keeps every documented
+  Gemini install command pinned to a ref.
+
 ## [0.3.0] — 2026-09-11
 
 ### Fixed

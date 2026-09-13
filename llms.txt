@@ -22,7 +22,7 @@ Agent skill (the repository root is one portable Agent Plugin):
     claude plugin install hermes-blind@hermes-blind
     codex plugin marketplace add hermes-labs-ai/hermes-blind
     codex plugin add hermes-blind@hermes-blind
-    gemini extensions install https://github.com/hermes-labs-ai/hermes-blind
+    gemini extensions install https://github.com/hermes-labs-ai/hermes-blind --ref main
 
 ## Recovery example
 
