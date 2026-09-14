@@ -111,17 +111,33 @@ def _claude_pool(
 ) -> list[tuple[str, str, list[Path]]]:
     projects = claude_projects_dir(env)
     target = (Path(cwd) if cwd is not None else Path.cwd()).expanduser()
+    # Claude Code encodes the path it was *launched with*, which is not always
+    # the fully resolved one: a symlinked project directory (and on macOS
+    # /tmp -> /private/tmp or /home -> /System/Volumes/Data/home) records the
+    # literal path. Resolving first and encoding only that misses those logs
+    # entirely, so try the literal encoding first and the resolved one after.
+    candidates = [target]
     try:
-        target = target.resolve()
+        resolved = target.resolve()
     except OSError:  # pragma: no cover - resolve() is effectively total on POSIX
-        pass
-    names = encoded_project_names(target)
+        resolved = target
+    if resolved != target:
+        candidates.append(resolved)
+    names: list[str] = []
+    for candidate in candidates:
+        for name in encoded_project_names(candidate):
+            if name not in names:
+                names.append(name)
     files: list[Path] = []
+    matched: str | None = None
     for name in names:
-        files.extend(_files(projects / name, "*.jsonl"))
+        found = _files(projects / name, "*.jsonl")
+        if found and matched is None:
+            matched = name
+        files.extend(found)
     searched.append(f"{projects / names[0]}/*.jsonl")
     if files:
-        return [("claude", f"{projects / names[0]}", files)]
+        return [("claude", f"{projects / (matched or names[0])}", files)]
     if cwd is not None:
         # An explicit --cwd is a request for that project, not for whatever
         # else is on disk. Do not widen it.
