@@ -612,7 +612,11 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 2
-            out_path.write_text(md, encoding="utf-8")
+            try:
+                out_path.write_text(md, encoding="utf-8")
+            except OSError as e:
+                print(f"hermes-blind apply: {e}", file=sys.stderr)
+                return 1
             print(f"wrote {args.out}", file=sys.stderr)
         else:
             sys.stdout.write(md)

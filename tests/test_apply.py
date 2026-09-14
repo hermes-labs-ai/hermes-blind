@@ -135,6 +135,26 @@ def test_apply_session_requires_force_for_existing_output(tmp_path, capsys):
     assert "original goal sentence" in out.read_text(encoding="utf-8")
 
 
+def test_apply_session_out_parent_missing_reports_error(tmp_path, capsys):
+    session = _write_session(tmp_path, ["original goal sentence"])
+    out = tmp_path / "no" / "such" / "dir" / "out.md"
+    rc = main(["--session", str(session), "--out", str(out)])
+    assert rc == 1
+    assert not out.exists()
+    err = capsys.readouterr().err
+    assert err.startswith("hermes-blind apply: ")
+
+
+def test_apply_session_out_is_directory_reports_error(tmp_path, capsys):
+    session = _write_session(tmp_path, ["original goal sentence"])
+    out_dir = tmp_path / "adir"
+    out_dir.mkdir()
+    rc = main(["--session", str(session), "--out", str(out_dir), "--force"])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert err.startswith("hermes-blind apply: ")
+
+
 def test_apply_session_emits_to_stdout_when_no_out(tmp_path, capsys):
     session = _write_session(tmp_path, ["goal text"])
     rc = main(["--session", str(session), "--turn", "3"])
