@@ -307,3 +307,24 @@ def test_evidence_requires_a_session_or_latest(capsys):
     with pytest.raises(SystemExit) as exit_info:
         evidence_main([])
     assert exit_info.value.code == 2
+
+
+def test_a_symlinked_project_directory_is_found_under_its_literal_path(home, tmp_path):
+    """Claude Code encodes the cwd it was launched with, not its real path.
+
+    A project reached through a symlink (and, on macOS, any path under
+    /tmp or /home) logs under the literal encoding. Discovery must look
+    there, not only under the resolved one.
+    """
+    real = tmp_path / "real" / "app"
+    real.mkdir(parents=True)
+    link = tmp_path / "link"
+    link.symlink_to(real, target_is_directory=True)
+    assert link.resolve() != link
+
+    chosen = _write(_project_dir(home, link) / "s.jsonl", _claude_session(), 1_000)
+
+    found = discover_latest(cwd=link)
+
+    assert found.path == chosen
+    assert found.fmt == "claude"

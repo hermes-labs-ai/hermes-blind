@@ -361,6 +361,14 @@ for release history and the
 [contribution guide](https://github.com/hermes-labs-ai/hermes-blind/blob/main/CONTRIBUTING.md)
 for contribution guidance.
 
+## Part of the Hermes Labs toolkit — see also:
+- [lintlang](https://github.com/hermes-labs-ai/lintlang) — Static analysis for AI agent tool descriptions and workflows.
+- [little-canary](https://github.com/hermes-labs-ai/little-canary) — Prompt injection detection through a powerless sacrificial model.
+- [fidelis](https://github.com/hermes-labs-ai/fidelis) — Semantic memory for long-running agents with local retrieval.
+- [hermeneutic](https://github.com/hermes-labs-ai/hermeneutic) — Detect recurring AI drift from correction history.
+- [zer0dex](https://github.com/hermes-labs-ai/zer0dex) — Local agent recall without burdening the context window.
+- [claude-plugins marketplace](https://github.com/hermes-labs-ai/claude-plugins) — Plugin system for Claude Code extensibility.
+
 ## License
 
 MIT. See the [license](https://github.com/hermes-labs-ai/hermes-blind/blob/main/LICENSE).
