@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: no-operator-path-leak
+        name: block operator username / absolute /Users/ paths
+        entry: bash -c 'git grep -nE "rbr_lpci|/Users/[A-Za-z0-9_.-]+" -- ":!.pre-commit-config.yaml" && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+        always_run: true

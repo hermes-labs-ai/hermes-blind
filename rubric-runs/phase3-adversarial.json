@@ -571,8 +571,8 @@
     "backend": "claude-cli-contextual",
     "inputs": {
       "intent": "identify failure modes, blind spots, and gaps in this debias-scaffold implementation \u2014 what bias does it NOT remove, what new bias might it introduce, what edge cases break it",
-      "context_path": "/Users/rbr_lpci/Documents/projects/hermes-blind/PLAN-v2.md",
-      "target_path": "/Users/rbr_lpci/Documents/projects/hermes-blind/src/hermes_blind/scaffold.py",
+      "context_path": "PLAN-v2.md",
+      "target_path": "src/hermes_blind/scaffold.py",
       "target_hash_sha256": "5915b686963cb736",
       "context_hash_sha256": "a7149ffbaa99ca29",
       "target_length_chars": 4656,
