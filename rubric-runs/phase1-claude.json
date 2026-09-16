@@ -549,8 +549,8 @@
     "backend": "claude-cli-contextual",
     "inputs": {
       "intent": "evaluate whether this design plan for a debias-scaffold (HERMES-BLIND) is sound, backend-agnostic, and empirically falsifiable",
-      "context_path": "/Users/rbr_lpci/Documents/projects/hermes-rubric/INTENT.md",
-      "target_path": "/Users/rbr_lpci/Documents/projects/hermes-blind/PLAN-v1.md",
+      "context_path": "hermes-rubric/INTENT.md",
+      "target_path": "PLAN-v1.md",
       "target_hash_sha256": "eb69574e22451499",
       "context_hash_sha256": "502e10bacdc5b7f8",
       "target_length_chars": 5350,

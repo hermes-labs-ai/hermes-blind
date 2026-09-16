@@ -34,6 +34,14 @@ jobs:
       - name: Lint (ruff)
         run: ruff check src tests
 
+      - name: Guard against operator-path leaks
+        run: |
+          if git grep -nE 'rbr_lpci|/Users/[A-Za-z0-9_.-]+' -- ':!.git' \
+              ':!.github/workflows/ci.yml' ':!.pre-commit-config.yaml'; then
+            echo "::error::Found operator username or absolute /Users/ path in tracked files (see matches above)."
+            exit 1
+          fi
+
       - name: Tests (pytest)
         run: pytest -v --tb=short
 
