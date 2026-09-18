@@ -28,9 +28,11 @@ import pytest
 ROOT = Path(__file__).parent.parent
 MARKETPLACE_MANIFEST = ROOT / ".claude-plugin" / "marketplace.json"
 PLUGIN_MANIFEST = ROOT / ".claude-plugin" / "plugin.json"
+PORTABLE_MANIFEST = ROOT / "plugin.json"
 PLUGIN_SKILL = ROOT / "skills" / "hermes-blind" / "SKILL.md"
 SUBDIR_PACKAGE = ROOT / "claude-plugin"
 SUBDIR_MANIFEST = SUBDIR_PACKAGE / ".claude-plugin" / "plugin.json"
+SUBDIR_PORTABLE_MANIFEST = SUBDIR_PACKAGE / "plugin.json"
 SUBDIR_SKILL = SUBDIR_PACKAGE / "skills" / "hermes-blind" / "SKILL.md"
 
 
@@ -185,6 +187,13 @@ def _path_env() -> str:
 # Only a `git-subdir` source naming a real subdirectory copies a nested tree
 # intact, so the plugin is also published as the `claude-plugin/` package.
 #
+# That package also carries its own top-level `plugin.json`, kept
+# byte-identical to the repository's portable manifest (`/plugin.json`):
+# external catalog intake such as Awesome Copilot's resolves a submitted
+# plugin's identity from a manifest at the root of the submitted directory,
+# not from a nested `.claude-plugin/plugin.json` — see
+# `test_cross_repo_subdir_package_has_a_canonical_portable_manifest`.
+#
 # `claude plugin install` exits 0 even when the install fails, so these tests
 # assert on the resulting cache contents, never on a return code.
 
@@ -265,6 +274,29 @@ def test_cross_repo_subdir_package_mirrors_the_root_package():
     assert SUBDIR_SKILL.read_bytes() == PLUGIN_SKILL.read_bytes(), (
         f"{SUBDIR_SKILL} has drifted from {PLUGIN_SKILL}"
     )
+
+
+def test_cross_repo_subdir_package_has_a_canonical_portable_manifest():
+    """`claude-plugin/plugin.json` — the Agent Plugins v1 manifest at the
+    submitted plugin root (github/awesome-copilot#3301).
+
+    Awesome Copilot's intake resolves a submitted plugin's identity from a
+    `plugin.json` at the *root of the submitted directory*, not from
+    `<root>/.claude-plugin/plugin.json`. Since `claude-plugin/` — not the
+    repository root — is what gets submitted there (see the module docstring
+    above), it needs its own top-level `plugin.json`, kept byte-identical to
+    the repository's own portable manifest so the two can never drift.
+    """
+    assert SUBDIR_PORTABLE_MANIFEST.is_file(), (
+        f"{SUBDIR_PORTABLE_MANIFEST} is missing: the awesome-copilot intake "
+        "resolves plugin identity from a plugin.json at the submitted root"
+    )
+    assert SUBDIR_PORTABLE_MANIFEST.read_bytes() == PORTABLE_MANIFEST.read_bytes(), (
+        f"{SUBDIR_PORTABLE_MANIFEST} has drifted from {PORTABLE_MANIFEST}"
+    )
+    manifest = json.loads(SUBDIR_PORTABLE_MANIFEST.read_text(encoding="utf-8"))
+    assert manifest["name"] == "hermes-blind"
+    assert manifest["version"] == "0.3.0"
 
 
 def test_cross_repo_subdir_package_is_self_contained():
