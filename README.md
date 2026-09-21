@@ -1,3 +1,7 @@
+<div align="center">
+
+<img src="assets/hermes-blind-banner.jpg" alt="Hermes Blind — a winged guide in a blindfold travelling toward an illuminated doorway" width="960">
+
 # Hermes Blind
 
 **Recover the original goal of a long Claude Code or Codex session—and add evidence constraints to evaluation prompts.**
@@ -7,6 +11,8 @@
 [![CI](https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml/badge.svg)](https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/hermes-labs-ai/hermes-blind/blob/main/LICENSE)
 [![Status: experimental](https://img.shields.io/badge/status-experimental-orange.svg)](#evidence-and-limits)
+
+</div>
 
 Long agent sessions can lose the shape of the request that started them.
 Hermes Blind reads the first user turn from a local Claude Code or Codex JSONL
