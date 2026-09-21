@@ -1,181 +1,74 @@
 <div align="center">
 
-<img src="assets/hermes-blind-banner.jpg" alt="Hermes Blind — a winged guide in a blindfold travelling toward an illuminated doorway" width="960">
+<h1>Hermes Blind</h1>
 
-# Hermes Blind
+<img src="assets/hermes-blind-banner.jpg" alt="Hermes Blind — a winged guide in a blindfold travelling toward an illuminated doorway" width="960" />
 
-**Recover the original goal of a long Claude Code or Codex session—and add evidence constraints to evaluation prompts.**
+<p><strong>Recover the original goal of a long coding-agent session before the context around it gets noisy.</strong></p>
 
-[![PyPI](https://img.shields.io/pypi/v/hermes-blind.svg)](https://pypi.org/project/hermes-blind/)
-[![Python](https://img.shields.io/pypi/pyversions/hermes-blind.svg)](https://pypi.org/project/hermes-blind/)
-[![CI](https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml/badge.svg)](https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/hermes-labs-ai/hermes-blind/blob/main/LICENSE)
-[![Status: experimental](https://img.shields.io/badge/status-experimental-orange.svg)](#evidence-and-limits)
+<p>
+<a href="https://pypi.org/project/hermes-blind/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/hermes-blind.svg"></a>
+<a href="https://pypi.org/project/hermes-blind/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/hermes-blind.svg"></a>
+<a href="https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml/badge.svg"></a>
+<a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-green.svg"></a>
+<a href="EVALUATION.md"><img alt="Status: experimental" src="https://img.shields.io/badge/status-experimental-orange.svg"></a>
+</p>
+
+<p><sub><strong>Hermes Blind by <a href="https://hermes-labs.ai">Hermes Labs</a></strong> — infrastructure for agents that act on real systems.</sub></p>
 
 </div>
 
-Long agent sessions can lose the shape of the request that started them.
-Hermes Blind reads the first user turn from a local Claude Code or Codex JSONL
-log and writes a compact recovery anchor you can inspect and paste back into
-the session. It also provides a small prompt wrapper for evaluations that asks
-the model to disclose prior exposure, quote its evidence, and hedge when the
-evidence is thin.
+## The problem
 
-The package is deterministic, dependency-free at runtime, and local: it makes
-no model calls and sends no network requests.
+Long coding-agent sessions can lose the shape of the request that started them.
 
-## Install
+As a Claude Code or Codex session grows, debugging output, tool results, intermediate decisions, and follow-up turns accumulate around the original instruction. The model may still have access to that history, but the user's initial constraints can become harder to keep salient.
 
-For the isolated command-line app:
+When that happens, the usual recovery move is manual: scroll back, reconstruct what mattered, and restate it.
+
+Hermes Blind makes that recovery deterministic.
+
+It reads the first user turn from a supported local session transcript and generates a compact, inspectable recovery anchor that can be pasted or injected back into the session.
+
+No summarizing model. No external service. No network request.
+
+Hermes Blind also includes an evidence-bound prompt wrapper for LLM evaluation workflows. That is a secondary surface: the primary job is recovering original intent from long agent sessions.
+
+## What it does
+
+- **Find the latest supported session.** Discover a recent usable Claude Code or Codex JSONL log from supported local locations.
+- **Recover the original user intent.** Parse the first real user turn while skipping tool output, sidechain/sub-agent turns, compaction summaries, and injected context.
+- **Generate a compact anchor.** Produce Markdown that can be inspected before it is reintroduced to an agent.
+- **Choose how much to recover.** Use `goals`, `first-sentence`, or `full` extraction modes depending on the context budget.
+- **Work across agent hosts.** Install the portable skill/plugin surface in Claude Code, Codex CLI, or Gemini CLI.
+- **Inject at a chosen turn.** Hermes Agent can call Blind through a `pre_llm_call` hook.
+- **Wrap evaluation prompts.** Add explicit evidence and uncertainty constraints without calling a model.
+
+## Quickstart
+
+Hermes Blind requires Python 3.10+.
+
+For an isolated command-line install:
 
 ```bash
 pipx install hermes-blind
 ```
 
-Or install it into your current Python environment:
+Or:
 
 ```bash
 python -m pip install hermes-blind
 ```
 
-Requires Python 3.10+.
-
-### Install the agent skill in Claude Code, Codex, or Gemini CLI
-
-The repository root is one portable
-[Agent Plugin](https://agent-plugins.org/): a `plugin.json` manifest and the
-`skills/hermes-blind/SKILL.md` skill. Each host installs that same root through
-its own native command; none of them gets a separate copy of the skill.
-
-| Host | Install | Read back |
-| --- | --- | --- |
-| Claude Code | `claude plugin marketplace add hermes-labs-ai/hermes-blind`<br>`claude plugin install hermes-blind@hermes-blind` | `claude plugin list` |
-| OpenAI Codex CLI | `codex plugin marketplace add hermes-labs-ai/hermes-blind`<br>`codex plugin add hermes-blind@hermes-blind` | `codex plugin list` |
-| Gemini CLI | `gemini extensions install https://github.com/hermes-labs-ai/hermes-blind --ref v0.3.2` | `gemini skills list` |
-
-What each host reads:
-
-- Claude Code reads `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json`.
-- Codex reads the repo marketplace `.agents/plugins/marketplace.json` (its
-  entry is `./`, the root) and the portable `plugin.json`.
-- Gemini CLI reads `gemini-extension.json` and discovers the bundled skill
-  under `skills/`. The stable release `v0.3.1` and later contain
-  `gemini-extension.json`; use `--ref v0.3.2` for a reproducible released install.
-  For development versions, use `--ref main` instead.
-
-The skill then runs the `hermes-blind` command through `uvx` or `pipx` at the
-exact pinned release, so installing the skill does not install the Python
-package. Recovery reads Claude Code and Codex session logs only; in Gemini CLI
-the skill can recover a Claude Code or Codex session you name, but not the
-Gemini session itself.
-
-### Or load the skill as a local Claude Code plugin
-
-This repo ships a root `.claude-plugin/plugin.json`, so Claude Code can load
-its `hermes-blind` skill directly from a clone via the `--plugin-dir` flag —
-no marketplace and no MetaHub install required:
+From the project directory for an active Claude Code or Codex session:
 
 ```bash
-git clone https://github.com/hermes-labs-ai/hermes-blind
-cd hermes-blind
-claude --plugin-dir .
+hermes-blind apply   --latest   --format auto   --turn 9   --out recovery.md
 ```
 
-### Or install it as a Claude Code plugin from the marketplace
+Blind prints the session file it selected to stderr and writes an inspectable anchor to `recovery.md`.
 
-The same repository root also serves as a Claude Code marketplace
-(`.claude-plugin/marketplace.json`), so the plugin installs without a
-checkout:
-
-```bash
-claude plugin marketplace add hermes-labs-ai/hermes-blind
-claude plugin install hermes-blind@hermes-blind
-```
-
-The marketplace entry points at the repository root itself — the same
-`.claude-plugin/plugin.json` used by `--plugin-dir .` above — so there is
-only one plugin package, and its version tracks `pyproject.toml` rather than
-being hand-maintained in the marketplace manifest. `claude plugin install`
-copies that whole directory into its own plugin cache, so the installed
-copy resolves `skills/hermes-blind/SKILL.md` from inside the cache, not from
-this checkout.
-
-Because the repository root is both the plugin and the marketplace,
-`claude plugin validate .` resolves to the marketplace manifest; pass each
-manifest explicitly to validate both:
-
-```bash
-claude plugin validate .claude-plugin/marketplace.json --strict
-claude plugin validate .claude-plugin/plugin.json --strict
-```
-
-### Or install it from an external catalog
-
-The two paths above both resolve the plugin at the repository root, which
-only works for a marketplace that ships inside this repository. A catalog in
-a *different* repository — such as
-[hermes-labs-ai/claude-plugins](https://github.com/hermes-labs-ai/claude-plugins)
-— has to name this repository by URL, and no cross-repo source type in Claude
-Code 2.1.x can install a plugin that lives at a repository root: a `github`
-source clones over SSH with no HTTPS fallback, and a `git-subdir` source with
-`path: "."` copies the top-level files but drops every subdirectory,
-including `skills/`. Both leave `claude plugin install` reporting success.
-
-`claude-plugin/` is the package for that case — the same manifest and the
-same skill, in a subdirectory a `git-subdir` source can name:
-
-```json
-{
-  "source": "git-subdir",
-  "url": "https://github.com/hermes-labs-ai/hermes-blind.git",
-  "path": "claude-plugin",
-  "ref": "main"
-}
-```
-
-Its files are kept byte-identical to the root package by
-`tests/test_marketplace.py`; edit the root copies and mirror them, never the
-other way round.
-
-## Recover a long agent session
-
-The lowest-friction path is to give your coding agent this instruction:
-
-> Install `hermes-blind`, then run `hermes-blind apply --latest --format auto
-> --turn <current-turn-number> --out recovery.md`. Show me the generated
-> anchor and use it to restate my original goals before continuing. Do not
-> overwrite files or share the session text.
-
-Or run it directly:
-
-```bash
-hermes-blind apply \
-  --latest \
-  --format auto \
-  --turn 9 \
-  --out recovery.md
-```
-
-`--latest` finds this session's log instead of asking you to: the most
-recently modified log under `~/.claude/projects/<this directory>` — or
-`~/.codex/sessions/**/rollout-*.jsonl` — that contains a user turn, so
-sub-agent-only logs are passed over. It prints the file it chose to stderr,
-honors `CLAUDE_CONFIG_DIR` and `CODEX_HOME`, and exits 1 with what it looked
-at rather than guessing when nothing matches or two logs are
-indistinguishable. `--cwd PATH` points it at another project directory.
-
-Naming the file yourself still works exactly as before, and is the fallback
-when discovery refuses:
-
-```bash
-hermes-blind apply \
-  --session /path/to/session.jsonl \
-  --format auto \
-  --turn 9 \
-  --out recovery.md
-```
-
-The generated markdown starts like this:
+A generated anchor looks like:
 
 ```markdown
 # Recovery scaffold (anchor-extracted from turn 1, applied at turn 9)
@@ -188,47 +81,64 @@ The generated markdown starts like this:
 - user turns observed: 9
 ```
 
-### Find the session log
+Review the file, then provide it back to the agent or let a supported harness inject it at a chosen intervention point.
 
-Blind reads an explicit local JSONL path; it does not search your home
-directory (`--latest` above does that for you). To pick a path by hand for
-the two supported log formats, start with:
+## Why this is different from summarization
+
+Hermes Blind does not ask another model to reinterpret the request. It deterministically extracts what the user actually said in the initial turn, producing an anchor that is easy to inspect and reuse.
+
+## Extraction modes
+
+| Mode | Behavior | Use when |
+|---|---|---|
+| `goals` (default) | Preserves up to 12 goal-carrying sentences from the first user turn | Multi-step engineering tasks |
+| `first-sentence` | Keeps the opening fragment, up to 240 characters | Very tight context budgets or simple prompts |
+| `full` | Keeps up to 4,000 characters from the first prompt | The first prompt is already structured like a specification |
+
+`--format auto` recognizes supported Claude Code and Codex JSONL shapes.
+
+Blind skips records that are not the user's actual conversational turn, including supported forms of:
+
+- tool results;
+- sub-agent / sidechain turns;
+- skill or slash-command expansions;
+- compaction summaries;
+- system reminders and task notifications;
+- Codex environment context and injected `AGENTS.md` material.
+
+The `--turn` value is a label for the recovery artifact. Blind does not automatically detect the correct intervention turn.
+
+## Session discovery
+
+`--latest` starts with Claude Code logs for the current project and scans local Codex rollouts, then chooses the newest usable log containing a user turn. If no Claude Code log matches and `--cwd` was not passed, the Claude search widens to other projects.
+
+It honors:
+
+- `CLAUDE_CONFIG_DIR`
+- `CODEX_HOME`
+- `--cwd PATH`
+
+If discovery is ambiguous or nothing matches, Blind exits instead of silently guessing.
+
+You can always provide the session file explicitly:
 
 ```bash
-# Claude Code (one project directory, newest files first)
-ls -t ~/.claude/projects/*/*.jsonl | head
-
-# Codex (oldest-to-newest; the newest rollout is the last line)
-find ~/.codex/sessions -type f -name 'rollout-*.jsonl' -print 2>/dev/null \
-  | sort | tail
+hermes-blind apply   --session /path/to/session.jsonl   --format auto   --turn 9   --out recovery.md
 ```
 
-Pass the selected path to `--session` and review the generated file before
-sharing it. Gemini CLI installs are supported for the package's prompt and
-skill surfaces; Gemini session-log recovery is not currently supported.
+Generated recovery files can contain user-authored session text. Inspect them before sharing externally.
 
-`--format auto` recognizes Claude Code and Codex JSONL shapes. Records that
-are not user turns — tool results, sub-agent (sidechain) turns, slash-command
-output and skill expansions, compaction summaries, and the context both tools
-inject into the log (system reminders, task notifications, Codex environment
-context and `AGENTS.md` instructions) — are skipped, so turn 1 is the first
-thing the user typed; a `/command` is kept as typed. The default
-`goals` mode preserves up to 12 goal-carrying sentences from the first user
-turn; `first-sentence` keeps the compact legacy behavior and `full` includes
-up to 4,000 characters.
+## Use it from an agent
 
-The `--turn` value is only a label in the output. Hermes Blind does not detect
-drift or decide when recovery is needed. Existing output files are preserved
-unless `--force` is explicit, and the input session file can never be used as
-the output path.
+A low-friction instruction to an agent is:
 
-Recovery files include user-authored text. Inspect them before sharing.
+> Install `hermes-blind`, run `hermes-blind apply --latest --format auto --turn <current-turn-number> --out recovery.md`, show me the generated anchor, and use it to restate my original goals before continuing.
 
-### Re-anchor a Hermes Agent session at a chosen turn
+That keeps the recovery artifact visible rather than silently rewriting the conversation.
 
-Hermes Agent's `pre_llm_call` shell-hook contract can inject a recovery
-anchor without writing the conversation to another file. Choose the turn
-explicitly in `~/.hermes/config.yaml`:
+## Hermes Agent hook
+
+Hermes Agent's `pre_llm_call` shell-hook contract can inject an anchor at a turn you choose:
 
 ```yaml
 hooks:
@@ -237,48 +147,49 @@ hooks:
       timeout: 5
 ```
 
-Hermes Agent asks for consent the first time it runs a shell hook. At the
-selected turn, Blind reads the hook payload on stdin and returns a compact
-`context` block on stdout. On other turns, malformed input, or an unsupported
-payload it returns an empty object and the agent proceeds unchanged.
+At the selected turn, Blind reads the hook payload from stdin and returns a compact context block.
 
-The turn is a user-chosen intervention point, not a detected drift event or an
-efficacy threshold. The injected anchor is ephemeral and may contain text from
-the first user turn; do not treat it as a security boundary.
+The intervention point is chosen by the developer or harness. It is not an automatically detected drift event.
 
-### Machine-readable result envelope
+## Portable plugin / skill installation
 
-The same extraction can be emitted as a Hermes Reliability Lab result
-envelope — the markdown scaffold embedded verbatim, plus the facts it was
-rendered from, tool version, a hash of the exact input bytes, one finding per
-thing worth knowing, the exit code, a timestamp, and the Git commit when run
-from a checkout:
+The repository ships a portable plugin/skill surface for Claude Code, Codex CLI, and Gemini CLI.
+
+### Claude Code
 
 ```bash
-python -m hermes_blind.evidence --session /path/to/session.jsonl --format auto
-python -m hermes_blind.evidence --latest
+claude plugin marketplace add hermes-labs-ai/hermes-blind
+claude plugin install hermes-blind@hermes-blind
 ```
 
-Extraction is unchanged; what is added is observability. Lines that do not
-parse are counted and reported (`input.unparseable-lines`) instead of only
-being skipped; two user turns before the first assistant reply are reported
-(`input.ambiguous-initial-turn`) and turn 1 is still the anchor; a file with
-no user turn is the product's own error, exit 1, with no anchor invented. The
-emitter reads exactly the one file it is given and discovers nothing; `--latest`
-resolves the path first, in the CLI, and prints it. Either way the path appears
-in the record by basename only.
+### OpenAI Codex CLI
 
-## Add evidence constraints to an evaluation prompt
+```bash
+codex plugin marketplace add hermes-labs-ai/hermes-blind
+codex plugin add hermes-blind@hermes-blind
+```
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/hermes-labs-ai/hermes-blind --ref v0.3.2
+```
+
+Important boundary: **Gemini CLI can host the Hermes Blind skill, but Hermes Blind does not currently recover Gemini session logs.** From Gemini, the skill can operate on a Claude Code or Codex session you name.
+
+For packaging details, see the [Claude marketplace manifest](.claude-plugin/marketplace.json), [Codex marketplace manifest](.agents/plugins/marketplace.json), [Gemini extension manifest](gemini-extension.json), and [Claude plugin notes](claude-plugin/README.md).
+
+## Evidence-bound evaluation prompts
+
+Hermes Blind can also wrap an evaluation prompt with explicit evidential constraints.
 
 From the CLI:
 
 ```bash
-hermes-blind apply \
-  --variant v1 \
-  --prompt "Score this release from quoted evidence."
+hermes-blind apply   --variant v1   --prompt "Score this release from quoted evidence."
 ```
 
-This prints a wrapped prompt without calling a model:
+Output:
 
 ```text
 [HERMES-BLIND]
@@ -290,7 +201,7 @@ Unknown or thin evidence = hedge; do not confabulate.
 Score this release from quoted evidence.
 ```
 
-Or use the Python API:
+Python API:
 
 ```python
 from hermes_blind import wrap
@@ -301,81 +212,56 @@ prompt = wrap(
 )
 ```
 
-Available variants are `null`, `micro`, `short`, `v1`, `full`, `placebo`, and
-`gate-only`. The `null` variant is an exact no-op for controlled comparisons.
-The package also exposes the dependency-free intent and scope preambles used
-by [Hermes Rubric](https://github.com/hermes-labs-ai/hermes-rubric).
+Available variants include `null`, `micro`, `short`, `v1`, `full`, `placebo`, and `gate-only`.
 
-## Evidence and limits
+The `null` variant is an exact no-op for controlled comparisons.
 
-The repository tests and CI cover deterministic wrapping, Claude Code and
-Codex JSONL parsing, recovery modes, safe output handling, package
-installation, and CLI invocation.
+The wrapper formats text and makes no model call.
 
-A frozen nine-session extraction audit found that the default goal-set anchor
-represented 40 of 66 pre-listed goals, compared with 7 of 66 for the earlier
-first-sentence heuristic. That supports better mission representation in the
-generated artifact for the evaluated sessions. It does **not** establish that
-reinserting the artifact changes model behavior or improves task outcomes.
-See the [evaluation report](https://github.com/hermes-labs-ai/hermes-blind/blob/main/EVALUATION.md)
-for the method, limitations, sanitized results, and receipt hashes.
+## Machine-readable evidence envelope
 
-Not established:
-
-- reliable bias reduction from the evaluation prefix;
-- successful behavioral recovery after inserting an anchor;
-- automatic drift detection or an optimal intervention turn;
-- adversarial prompt-injection resistance; or
-- non-English behavior.
-
-Treat the output as a transparent scaffold for a human or agent to inspect,
-not as a security boundary or independent evaluator.
-
-## Development
+The same recovery extraction can be emitted in a machine-readable Hermes Reliability Lab result envelope:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -e ".[dev]"
-ruff check src tests
-pytest -q
-python -m build
-twine check dist/*
+python -m hermes_blind.evidence --session /path/to/session.jsonl --format auto
+python -m hermes_blind.evidence --latest
 ```
 
-### Local `--latest` validation before tagging a release
+The envelope adds observability around the same extraction: tool version, input hash, parsing findings, exit status, and other run metadata.
 
-`--latest` discovery is covered in CI only against fake home directories
-under `tmp_path`. Before tagging a release that touches `apply.py`,
-`discover.py`, or the `--latest`/`--cwd` flags, run it once against a real
-`~/.claude/projects` or `~/.codex/sessions` tree from a project that actually
-used Claude Code or Codex:
+See [EVALUATION.md](EVALUATION.md) for implementation and evaluation details.
 
-```bash
-pip install -e .
-cd /path/to/a/real/claude-code-or-codex/project
-hermes-blind apply --latest --format auto --turn <N> --out /tmp/recovery.md
-```
+## Results
 
-Use the current turn number for `<N>` and inspect `/tmp/recovery.md`. A wrong
-guess exits 1 and names what it searched rather than failing silently; if
-that happens, fall back to `--session /path/to/session.jsonl` (see above).
+In a nine-session internal audit, the default goal-set anchor represented **40 of 66** pre-listed goals, compared with **7 of 66** for the earlier first-sentence heuristic. See [EVALUATION.md](EVALUATION.md) for the method and full results.
 
-See the [changelog](https://github.com/hermes-labs-ai/hermes-blind/blob/main/CHANGELOG.md)
-for release history and the
-[contribution guide](https://github.com/hermes-labs-ai/hermes-blind/blob/main/CONTRIBUTING.md)
-for contribution guidance.
+## Privacy
 
-## Part of the Hermes Labs toolkit — see also:
-- [lintlang](https://github.com/hermes-labs-ai/lintlang) — Static analysis for AI agent tool descriptions and workflows.
-- [little-canary](https://github.com/hermes-labs-ai/little-canary) — Prompt injection detection through a powerless sacrificial model.
-- [fidelis](https://github.com/hermes-labs-ai/fidelis) — Semantic memory for long-running agents with local retrieval.
-- [hermeneutic](https://github.com/hermes-labs-ai/hermeneutic) — Detect recurring AI drift from correction history.
+The core package is dependency-free at runtime, makes no model calls, and initiates no external network requests.
+
+It reads the local session file selected by the caller or resolved through `--latest`.
+
+Review generated recovery artifacts before sharing them outside the environment where the source session lives.
+
+## Documentation
+
+- [Evaluation and limitations](EVALUATION.md)
+- [Intent and project framing](INTENT.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+- [Citation metadata](CITATION.cff)
+- [License](LICENSE)
+
+## Part of the Hermes Labs toolkit
+
+- [LintLang](https://github.com/hermes-labs-ai/lintlang) — Static analysis for AI agent tool descriptions and workflows.
+- [Little Canary](https://github.com/hermes-labs-ai/little-canary) — Prompt injection detection through a powerless sacrificial model.
+- [Fidelis](https://github.com/hermes-labs-ai/fidelis) — Semantic memory for long-running agents with local retrieval.
+- [Hermeneutic](https://github.com/hermes-labs-ai/hermeneutic) — Reuse correction evidence and gate recurring epistemic drift.
 - [zer0dex](https://github.com/hermes-labs-ai/zer0dex) — Local agent recall without burdening the context window.
-- [claude-plugins marketplace](https://github.com/hermes-labs-ai/claude-plugins) — Plugin system for Claude Code extensibility.
 
-## License
+## Project basics
 
-MIT. See the [license](https://github.com/hermes-labs-ai/hermes-blind/blob/main/LICENSE).
+Hermes Blind is maintained by [Hermes Labs](https://hermes-labs.ai).
 
-Built by [Hermes Labs](https://hermes-labs.ai).
+MIT License. See [LICENSE](LICENSE).
