@@ -8,6 +8,8 @@ minor versions may change the public surface before 1.0.
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-09-21
+
 ### Added
 - The repository root now installs natively in OpenAI Codex CLI and Gemini CLI
   as well as Claude Code, from the same `skills/hermes-blind/SKILL.md`: a
@@ -17,13 +19,36 @@ minor versions may change the public surface before 1.0.
   `tests/test_cross_agent_install.py` ties every manifest's name, version and
   description to `pyproject.toml` and installs through the real CLIs when they
   are present. Package runtime is unchanged.
+- The external-catalog package under `claude-plugin/` now includes a canonical
+  portable `plugin.json`, kept byte-identical to the root manifest.
+- Added CodeMeta metadata, a typed-package marker, expanded PyPI discovery
+  metadata, and a release-synchronized CycloneDX SBOM.
+
+### Changed
+- The README now documents actionable Claude Code and Codex session-log
+  discovery, links the related Hermes Labs tools, and uses the stable
+  `v0.3.2` ref for reproducible Gemini CLI installation.
+- All package, runtime, plugin, citation, CodeMeta, skill-runner, and SBOM
+  version surfaces now agree on `0.3.2`. The existing GitHub `v0.3.1`
+  release remains unchanged; its PyPI publish could not proceed while the
+  package metadata still declared `0.3.0`.
 
 ### Fixed
-- The documented Gemini CLI install now passes `--ref main`. Without a ref,
+- The documented Gemini CLI install now passes an explicit release ref. Without a ref,
   `gemini extensions install <github-url>` installs the latest GitHub release
   archive; v0.3.0 predates `gemini-extension.json`, so the unpinned command
   failed with `Configuration file not found`. A test keeps every documented
   Gemini install command pinned to a ref.
+- Claude log discovery now checks the literal current-working-directory
+  encoding used by current clients, and output write failures are reported as
+  CLI errors instead of tracebacks.
+- Sanitized operator-local paths from committed evaluation receipts.
+
+### Evidence boundary
+
+- This release packages and documents deterministic local mechanics. It does
+  not establish downstream behavioral recovery, drift detection, bias
+  reduction, optimal intervention timing, or adversarial robustness.
 
 ## [0.3.0] — 2026-09-11
 

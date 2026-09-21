@@ -51,7 +51,7 @@ its own native command; none of them gets a separate copy of the skill.
 | --- | --- | --- |
 | Claude Code | `claude plugin marketplace add hermes-labs-ai/hermes-blind`<br>`claude plugin install hermes-blind@hermes-blind` | `claude plugin list` |
 | OpenAI Codex CLI | `codex plugin marketplace add hermes-labs-ai/hermes-blind`<br>`codex plugin add hermes-blind@hermes-blind` | `codex plugin list` |
-| Gemini CLI | `gemini extensions install https://github.com/hermes-labs-ai/hermes-blind --ref v0.3.1` | `gemini skills list` |
+| Gemini CLI | `gemini extensions install https://github.com/hermes-labs-ai/hermes-blind --ref v0.3.2` | `gemini skills list` |
 
 What each host reads:
 
@@ -60,7 +60,7 @@ What each host reads:
   entry is `./`, the root) and the portable `plugin.json`.
 - Gemini CLI reads `gemini-extension.json` and discovers the bundled skill
   under `skills/`. The stable release `v0.3.1` and later contain
-  `gemini-extension.json`; use `--ref v0.3.1` for a reproducible released install.
+  `gemini-extension.json`; use `--ref v0.3.2` for a reproducible released install.
   For development versions, use `--ref main` instead.
 
 The skill then runs the `hermes-blind` command through `uvx` or `pipx` at the

@@ -296,7 +296,7 @@ def test_cross_repo_subdir_package_has_a_canonical_portable_manifest():
     )
     manifest = json.loads(SUBDIR_PORTABLE_MANIFEST.read_text(encoding="utf-8"))
     assert manifest["name"] == "hermes-blind"
-    assert manifest["version"] == "0.3.0"
+    assert manifest["version"] == "0.3.2"
 
 
 def test_cross_repo_subdir_package_is_self_contained():
