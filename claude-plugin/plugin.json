@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "hermes-blind",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "Local recovery anchors for Claude Code and Codex sessions, plus evidence-gated evaluation prompts",
   "author": { "name": "Hermes Labs", "email": "roli@hermes-labs.ai" },
   "homepage": "https://hermes-labs.ai/open-source",
