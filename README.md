@@ -6,6 +6,10 @@
 
 <p><strong>Recover the original goal of a long coding-agent session before the context around it gets noisy.</strong></p>
 
+<p>Hermes Blind is developed by <a href="https://hermes-labs.ai">Hermes Labs</a>.</p>
+
+<p>Hermes Labs studies failure modes in agent and LLM systems, develops open-source tools that treat language as part of the runtime, and works with teams to remediate reliability failures in production.</p>
+
 <p>
 <a href="https://pypi.org/project/hermes-blind/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/hermes-blind.svg"></a>
 <a href="https://pypi.org/project/hermes-blind/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/hermes-blind.svg"></a>
@@ -13,8 +17,6 @@
 <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-green.svg"></a>
 <a href="EVALUATION.md"><img alt="Status: experimental" src="https://img.shields.io/badge/status-experimental-orange.svg"></a>
 </p>
-
-<p><sub><strong>Hermes Blind by <a href="https://hermes-labs.ai">Hermes Labs</a></strong> — infrastructure for agents that act on real systems.</sub></p>
 
 </div>
 
@@ -252,16 +254,12 @@ Review generated recovery artifacts before sharing them outside the environment 
 - [Citation metadata](CITATION.cff)
 - [License](LICENSE)
 
-## Part of the Hermes Labs toolkit
+## More from Hermes Labs
 
 - [LintLang](https://github.com/hermes-labs-ai/lintlang) — Static analysis for AI agent tool descriptions and workflows.
 - [Little Canary](https://github.com/hermes-labs-ai/little-canary) — Prompt injection detection through a powerless sacrificial model.
 - [Fidelis](https://github.com/hermes-labs-ai/fidelis) — Semantic memory for long-running agents with local retrieval.
 - [Hermeneutic](https://github.com/hermes-labs-ai/hermeneutic) — Reuse correction evidence and gate recurring epistemic drift.
 - [zer0dex](https://github.com/hermes-labs-ai/zer0dex) — Local agent recall without burdening the context window.
-
-## Project basics
-
-Hermes Blind is maintained by [Hermes Labs](https://hermes-labs.ai).
 
 MIT License. See [LICENSE](LICENSE).
