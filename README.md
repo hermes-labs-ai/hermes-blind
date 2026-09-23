@@ -8,7 +8,7 @@
 
 <p>Hermes Blind is developed by <a href="https://hermes-labs.ai">Hermes Labs</a>.</p>
 
-<p>Hermes Labs studies failure modes in agent and LLM systems, develops open-source tools that treat language as part of the runtime, and works with teams to remediate reliability failures in production.</p>
+<p>Hermes Labs is an agentic infrastructure company building the reliability layer for autonomous systems.</p>
 
 <p>
 <a href="https://pypi.org/project/hermes-blind/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/hermes-blind.svg"></a>
