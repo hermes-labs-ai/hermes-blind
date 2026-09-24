@@ -14,7 +14,7 @@
       {
         "id": "dim_2",
         "name": "Falsifiability Strategy",
-        "description": "Assesses the clarity and feasibility of the proposed strategies for empirically testing and potentially disproving the design\u2019s claims.",
+        "description": "Assesses the clarity and feasibility of the proposed strategies for empirically testing and potentially disproving the design’s claims.",
         "evidence_instructions": "Locate the section detailing evaluation methodologies; identify specific, testable hypotheses related to debiasing; analyze the proposed metrics and experimental setup for potential biases or limitations.",
         "weight": 3,
         "hedge": false
@@ -30,8 +30,8 @@
       {
         "id": "dim_4",
         "name": "Error Handling & Edge Cases",
-        "description": "Measures the design\u2019s consideration of potential error conditions and edge cases, especially those related to biased data or unexpected inputs.",
-        "evidence_instructions": "Look for sections describing error handling procedures; identify anticipated edge cases (e.g., zero-shot prompts, adversarial examples); assess the design\u2019s response to potential failures or unexpected results.",
+        "description": "Measures the design’s consideration of potential error conditions and edge cases, especially those related to biased data or unexpected inputs.",
+        "evidence_instructions": "Look for sections describing error handling procedures; identify anticipated edge cases (e.g., zero-shot prompts, adversarial examples); assess the design’s response to potential failures or unexpected results.",
         "weight": 2,
         "hedge": false
       },
@@ -89,7 +89,7 @@
           "source_class": "doc"
         }
       ],
-      "evidence_summary": "The document outlines specific integration points for the 'hermes-blind' scaffold, detailing how it should be applied to different backends, including within `backends.py` and `rolitwin` integration. It specifies that the implementation requires no API changes and that the scaffold\u2019s impact should be readily visible in the model's output.",
+      "evidence_summary": "The document outlines specific integration points for the 'hermes-blind' scaffold, detailing how it should be applied to different backends, including within `backends.py` and `[private integration redacted]` integration. It specifies that the implementation requires no API changes and that the scaffold’s impact should be readily visible in the model's output.",
       "source_class_mix": {
         "code": 0,
         "test": 0,
@@ -113,11 +113,11 @@
         },
         {
           "quote": "Score using only quoted evidence from the target text below.",
-          "location": "Draft scaffold \u2014 HERMES-BLIND v1",
+          "location": "Draft scaffold — HERMES-BLIND v1",
           "source_class": "doc"
         },
         {
-          "quote": "variance reduction \u226530% AND cross-model std \u22641.0 AND signal correlation preserved within \u00b10.1",
+          "quote": "variance reduction ≥30% AND cross-model std ≤1.0 AND signal correlation preserved within ±0.1",
           "location": "Success criteria (what makes this plan good)",
           "source_class": "doc"
         },
@@ -146,7 +146,7 @@
       "citations": [
         {
           "quote": "Score using only quoted evidence from the target text below.",
-          "location": "## Draft scaffold \u2014 HERMES-BLIND v1",
+          "location": "## Draft scaffold — HERMES-BLIND v1",
           "source_class": "doc"
         },
         {
@@ -236,12 +236,12 @@
           "source_class": "doc"
         },
         {
-          "quote": "reduce score variance on repeated runs of the same target by \u226530%",
+          "quote": "reduce score variance on repeated runs of the same target by ≥30%",
           "location": "Success criteria (what makes this plan good)",
           "source_class": "doc"
         },
         {
-          "quote": "Improve cross-model score convergence (std across backends \u22641.0 on a 0-10 scale for the same target)",
+          "quote": "Improve cross-model score convergence (std across backends ≤1.0 on a 0-10 scale for the same target)",
           "location": "Success criteria (what makes this plan good)",
           "source_class": "doc"
         },
@@ -251,7 +251,7 @@
           "source_class": "doc"
         }
       ],
-      "evidence_summary": "The design explicitly details integration points for the `hermes-blind` scaffold within existing infrastructure (`backends.py`, `rolitwin`) and outlines concrete success criteria including variance reduction, convergence, and auditability via disclosure of 'prior exposure'.",
+      "evidence_summary": "The design explicitly details integration points for the `hermes-blind` scaffold within existing infrastructure (`backends.py`, `[private integration redacted]`) and outlines concrete success criteria including variance reduction, convergence, and auditability via disclosure of 'prior exposure'.",
       "source_class_mix": {
         "code": 0,
         "test": 0,
@@ -269,7 +269,7 @@
       "hedge": false,
       "citations": [
         {
-          "quote": "the scaffold\u2019s effect should be visible in the disclosed \"prior exposure\" line so reviewers can inspect what the model \"knew\"",
+          "quote": "the scaffold’s effect should be visible in the disclosed \"prior exposure\" line so reviewers can inspect what the model \"knew\"",
           "location": "Success criteria (what makes this plan good)",
           "source_class": "doc"
         },
@@ -302,7 +302,7 @@
           "source_class": "doc"
         },
         {
-          "quote": "Total: 4 papers \u00d7 2 conditions \u00d7 5 runs \u00d7 4 models = 160 scoring runs.",
+          "quote": "Total: 4 papers × 2 conditions × 5 runs × 4 models = 160 scoring runs.",
           "location": "Test protocol (Phase 4 in the meta-plan)",
           "source_class": "doc"
         }
@@ -324,7 +324,7 @@
       "dim_id": "dim_1",
       "dim_name": "Backend Abstraction",
       "score": 6,
-      "score_rationale": "The design mentions specific integration points within backend files (`backends.py`, `rolitwin`), suggesting the abstraction isn't fully complete but is rather a layered approach with explicit backend integration. However, the requirement of no API changes and visible impact in model output indicates an attempt to minimize backend dependencies and observable alterations.",
+      "score_rationale": "The design mentions specific integration points within backend files (`backends.py`, `[private integration redacted]`), suggesting the abstraction isn't fully complete but is rather a layered approach with explicit backend integration. However, the requirement of no API changes and visible impact in model output indicates an attempt to minimize backend dependencies and observable alterations.",
       "evidence_drove_score": "prepend to every backend call in `backends.py` [Integration points]",
       "hedge_applied": false,
       "citation_source_weight": 0.7
@@ -334,7 +334,7 @@
       "dim_name": "Falsifiability Strategy",
       "score": 6,
       "score_rationale": "The design proposes specific, measurable criteria for success (variance reduction, convergence, signal preservation) and a concrete test protocol involving a defined corpus and multiple LLMs. This demonstrates a clear and feasible approach to empirically testing and potentially disproving the design's claims. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
-      "evidence_drove_score": "\u201cvariance reduction \u226530% AND cross-model std \u22641.0 AND signal correlation preserved within \u00b10.1\u201d [Success criteria (what makes this plan good)]",
+      "evidence_drove_score": "“variance reduction ≥30% AND cross-model std ≤1.0 AND signal correlation preserved within ±0.1” [Success criteria (what makes this plan good)]",
       "hedge_applied": false,
       "citation_source_weight": 0.7
     },
@@ -360,7 +360,7 @@
       "dim_id": "dim_5",
       "dim_name": "Modularity & Testability",
       "score": 6,
-      "score_rationale": "The design demonstrates modularity by explicitly detailing integration points within existing infrastructure (`backends.py`, `rolitwin`) and providing specific, measurable success criteria. While integration points are clear, the level of independent testability isn't explicitly discussed, preventing a higher score. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
+      "score_rationale": "The design demonstrates modularity by explicitly detailing integration points within existing infrastructure (`backends.py`, `[private integration redacted]`) and providing specific, measurable success criteria. While integration points are clear, the level of independent testability isn't explicitly discussed, preventing a higher score. [Score capped at 6: all citations are README/doc (self-marketing); no code/test evidence.]",
       "evidence_drove_score": "prepend to every backend call in `backends.py` [Integration points]",
       "hedge_applied": false,
       "citation_source_weight": 0.7
@@ -370,7 +370,7 @@
       "dim_name": "Reproducibility Reporting",
       "score": 6,
       "score_rationale": "The plan outlines a test protocol involving scoring with and without a scaffold across multiple models, and aims for visibility into prior exposure. This demonstrates a commitment to allowing review of the model's knowledge, contributing to reproducibility, though detail on specific documentation beyond this isn't evident.",
-      "evidence_drove_score": "\u201cthe scaffold\u2019s effect should be visible in the disclosed \"prior exposure\" line so reviewers can inspect what the model \"knew\"",
+      "evidence_drove_score": "“the scaffold’s effect should be visible in the disclosed \"prior exposure\" line so reviewers can inspect what the model \"knew\"",
       "hedge_applied": false,
       "citation_source_weight": 0.7
     },
@@ -455,6 +455,10 @@
       "stage_3_scores": 7,
       "hedge_dimensions": []
     },
-    "reproducibility_note": "Same inputs + same backend + same model version + same rubric_hash should produce scores within \u00b11 point. A rubric_hash diff between runs means the measuring stick itself changed \u2014 scores are not directly comparable."
+    "reproducibility_note": "Same inputs + same backend + same model version + same rubric_hash should produce scores within ±1 point. A rubric_hash diff between runs means the measuring stick itself changed — scores are not directly comparable."
+  },
+  "_public_redactions": {
+    "scope": "Private integration names in narrative model output replaced with bracketed labels. Scores and other result fields are unchanged.",
+    "original_is_not_byte_identical": true
   }
 }

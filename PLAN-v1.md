@@ -61,11 +61,8 @@ Shorter variant (~25 tokens):
 ## Integration points
 
 - `hermes-rubric` — prepend to every backend call in `backends.py`
-- `rolitwin` — add as a fourth rule in the polished system prompt
-- `/rolitwin`-style second-opinion tools
+- Second-opinion evaluation prompts
 - Code review / PR review prompts
-- `issue_harvester.py` extraction stage (Haiku inherits "candidate came from
-  Claude's own session" knowledge; BLIND prevents that from coloring extraction)
 
 ## Success criteria (what makes this plan good)
 
