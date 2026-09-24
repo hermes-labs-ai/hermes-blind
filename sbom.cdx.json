@@ -1,26 +1,27 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "version": 1,
+  "version": 2,
   "metadata": {
-    "timestamp": "2026-09-21T19:47:27Z",
+    "timestamp": "2026-09-24T21:17:36Z",
     "tools": [
       { "vendor": "Hermes Labs", "name": "hand-authored", "version": "0.3.2" }
     ],
     "component": {
-      "bom-ref": "pkg:pypi/hermes-blind@0.3.2",
+      "bom-ref": "hermes-blind-source",
       "type": "library",
       "name": "hermes-blind",
       "version": "0.3.2",
       "description": "Local recovery anchors for Claude Code and Codex sessions, plus evidence-gated evaluation prompts",
-      "licenses": [{ "license": { "id": "MIT" } }],
-      "purl": "pkg:pypi/hermes-blind@0.3.2"
+      "licenses": [{ "license": { "id": "Apache-2.0" } }],
+      "externalReferences": [{ "type": "vcs", "url": "https://github.com/hermes-labs-ai/hermes-blind" }],
+      "properties": [{ "name": "hermes:scope", "value": "Current repository source; previously published distributions retain their original license metadata." }]
     }
   },
   "components": [],
   "dependencies": [
     {
-      "ref": "pkg:pypi/hermes-blind@0.3.2",
+      "ref": "hermes-blind-source",
       "dependsOn": []
     }
   ]

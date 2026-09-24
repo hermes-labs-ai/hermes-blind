@@ -5,7 +5,7 @@
   "description": "Reads the first user turn from a local Claude Code or Codex JSONL log to write a compact recovery anchor, and wraps evaluation prompts with evidence constraints, deterministically and with no model or network calls.",
   "codeRepository": "https://github.com/hermes-labs-ai/hermes-blind",
   "version": "0.3.2",
-  "license": "https://spdx.org/licenses/MIT",
+  "license": "https://spdx.org/licenses/Apache-2.0",
   "programmingLanguage": "Python",
   "runtimePlatform": "Python >=3.10",
   "identifier": [
