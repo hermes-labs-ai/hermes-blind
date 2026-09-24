@@ -22,7 +22,7 @@ blocking_threshold = "MEDIUM"
 [review]
 provider = "coderabbit"
 argv = ["coderabbit", "review", "--agent"]
-timeout_seconds = 180.0
+timeout_seconds = 600.0
 
 [[fast]]
 name = "ruff"

@@ -152,15 +152,6 @@ If all four pass → ship. If any fail → iterate scaffold text, re-run ablatio
 - **`hermes-rubric`** — `backends.py` line 74ish, prepend scaffold to the
   prompt arg before subprocess call. One-line change, gated by env var
   `HERMES_BLIND_ENABLED=1` for opt-in until validated.
-- **`rolitwin`** — `twin_chat.py` `build_polished_system_prompt()` adds the
-  scaffold as a final rule. Tests: existing 26 tests must still pass; add 2
-  new tests for scaffold presence and disclosure line extraction.
-- **`issue_harvester.py`** — extraction stage (`extract_candidates()`)
-  prepends scaffold to the Haiku prompt. Prevents Haiku from inheriting
-  "this candidate came from Claude's own session" knowledge when harvester
-  is self-invoked.
-- **`/rolitwin` Skill** — no change; the CLI-level integration in rolitwin
-  covers it.
 - **Ad-hoc usage** — `from hermes_blind import wrap; prompt = wrap(your_prompt)`.
 
 ---
