@@ -50,4 +50,4 @@ see the [repository README](https://github.com/hermes-labs-ai/hermes-blind).
 
 ## License
 
-[MIT](../LICENSE)
+[Apache-2.0](../LICENSE)

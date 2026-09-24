@@ -42,4 +42,4 @@ sanitized input, and expected versus actual output.
 
 ## License
 
-Contributions are licensed under the project's MIT License.
+Contributions are licensed under the project's Apache-2.0 License.

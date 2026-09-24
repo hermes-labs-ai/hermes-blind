@@ -14,7 +14,7 @@
 <a href="https://pypi.org/project/hermes-blind/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/hermes-blind.svg"></a>
 <a href="https://pypi.org/project/hermes-blind/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/hermes-blind.svg"></a>
 <a href="https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hermes-labs-ai/hermes-blind/actions/workflows/ci.yml/badge.svg"></a>
-<a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-green.svg"></a>
+<a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/License-Apache--2.0-green.svg"></a>
 <a href="EVALUATION.md"><img alt="Status: experimental" src="https://img.shields.io/badge/status-experimental-orange.svg"></a>
 </p>
 
@@ -262,4 +262,4 @@ Review generated recovery artifacts before sharing them outside the environment 
 - [Hermeneutic](https://github.com/hermes-labs-ai/hermeneutic) — Reuse correction evidence and gate recurring epistemic drift.
 - [zer0dex](https://github.com/hermes-labs-ai/zer0dex) — Local agent recall without burdening the context window.
 
-MIT License. See [LICENSE](LICENSE).
+Apache-2.0 License. See [LICENSE](LICENSE).

@@ -6,6 +6,6 @@
   "author": { "name": "Hermes Labs", "email": "roli@hermes-labs.ai" },
   "homepage": "https://hermes-labs.ai/open-source",
   "repository": "https://github.com/hermes-labs-ai/hermes-blind",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": ["session-recovery", "agent-skills", "claude-code", "codex", "gemini-cli"]
 }
