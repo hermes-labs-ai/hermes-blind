@@ -37,7 +37,7 @@ emit absolute session paths by default.
 
 ## Reporting a bug
 
-Open an issue with the Python version, exact command or API call, a minimal
+[Open an issue](https://github.com/hermes-labs-ai/hermes-blind/issues) with the Python version, exact command or API call, a minimal
 sanitized input, and expected versus actual output.
 
 ## License
