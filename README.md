@@ -62,6 +62,8 @@ Or:
 python -m pip install hermes-blind
 ```
 
+Confirm the installed release with `hermes-blind --version`.
+
 From the project directory for an active Claude Code or Codex session:
 
 ```bash

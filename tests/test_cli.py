@@ -56,3 +56,11 @@ def test_hermes_agent_hook_fails_open_on_malformed_input(monkeypatch, capsys):
     monkeypatch.setattr("sys.stdin", io.StringIO("not-json"))
     assert main(["hermes-agent-hook", "--at-turn", "9"]) == 0
     assert json.loads(capsys.readouterr().out) == {}
+
+
+def test_version_flag_prints_package_version(capsys):
+    from hermes_blind import __version__
+
+    for flag in ("--version", "version"):
+        assert main([flag]) == 0
+        assert capsys.readouterr().out.strip() == f"hermes-blind {__version__}"

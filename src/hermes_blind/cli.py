@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import sys
 
+from hermes_blind import __version__
 from hermes_blind.apply import main as apply_main
 from hermes_blind.hermes_agent_hook import main as hermes_agent_hook_main
 
@@ -24,6 +25,7 @@ def _print_help() -> None:
 Usage:
   hermes-blind apply [options]
   hermes-blind hermes-agent-hook --at-turn N
+  hermes-blind --version
   hermes-blind --help
 
 Run a subcommand with --help for all options.
@@ -35,6 +37,9 @@ def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] in ("-h", "--help"):
         _print_help()
+        return 0
+    if args[0] in ("--version", "version"):
+        print(f"hermes-blind {__version__}")
         return 0
     if args[0] == "apply":
         return apply_main(args[1:])
