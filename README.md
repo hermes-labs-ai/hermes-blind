@@ -62,7 +62,7 @@ Or:
 python -m pip install hermes-blind
 ```
 
-Confirm the installed release with `hermes-blind --version`.
+Confirm the installed release with `python -c "from importlib.metadata import version; print(version('hermes-blind'))"`.
 
 From the project directory for an active Claude Code or Codex session:
 
