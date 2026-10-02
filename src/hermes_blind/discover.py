@@ -27,13 +27,33 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from hermes_blind.apply import _iter_user_texts, _iter_user_texts_codex
+from hermes_blind.apply import (
+    ParseStats,
+    _iter_user_texts,
+    _iter_user_texts_codex,
+)
 
 FORMATS = ("auto", "claude", "codex")
+
+# How many skipped logs are named in stderr output. The total is always
+# reported; the cap only keeps the diagnostic short when many logs pile up.
+MAX_SKIPPED_SHOWN = 5
 
 
 class DiscoveryError(Exception):
     """No session log could be chosen. The message is user-facing."""
+
+
+@dataclass(frozen=True)
+class SkippedLog:
+    """A newer candidate log that discovery rejected, and why.
+
+    ``name`` is the file's basename only: session paths are not emitted in
+    full by default (see AGENTS.md). ``reason`` is a short, fixed phrase.
+    """
+
+    name: str
+    reason: str
 
 
 @dataclass(frozen=True)
@@ -44,12 +64,15 @@ class Discovery:
     so the caller does not have to sniff it again. ``scope`` names the
     location searched and ``skipped`` counts newer candidates that carried no
     user turn — both are reported to the user, not acted on.
+    ``skipped_logs`` names the first :data:`MAX_SKIPPED_SHOWN` of them, newest
+    first, with the reason each was rejected; ``skipped`` stays the full count.
     """
 
     path: Path
     fmt: str
     scope: str
     skipped: int
+    skipped_logs: tuple[SkippedLog, ...] = ()
 
 
 def claude_projects_dir(env: dict[str, str] | None = None) -> Path:
@@ -91,19 +114,33 @@ def _files(directory: Path, pattern: str) -> list[Path]:
         return []
 
 
-def _has_user_turn(path: Path, fmt: str) -> bool:
-    """Whether the existing parser finds at least one user turn in ``path``.
+def _skip_reason(path: Path, fmt: str) -> str | None:
+    """Why ``path`` cannot be the current session, or ``None`` if it can.
 
-    A sub-agent-only log, an empty log and an unreadable file all answer no.
+    A usable log has at least one user turn according to the existing parser.
+    A sub-agent-only log and an empty log have none; an unreadable file or one
+    that is not valid UTF-8 cannot be read at all. Lines that are not valid
+    JSON are skipped by the parser, so they are only mentioned when they are
+    the reason no user turn was found.
     """
     iterator = _iter_user_texts_codex if fmt == "codex" else _iter_user_texts
-    generator = iterator(path)
+    stats = ParseStats()
+    generator = iterator(path, stats)
     try:
-        return next(generator, None) is not None
+        if next(generator, None) is not None:
+            return None
     except (OSError, UnicodeDecodeError):
-        return False
+        return "unreadable (cannot be read or is not valid UTF-8)"
     finally:
         generator.close()
+    if stats.unparseable_lines:
+        return f"no user turn ({stats.unparseable_lines} unparseable line(s))"
+    return "no user turn"
+
+
+def _has_user_turn(path: Path, fmt: str) -> bool:
+    """Whether the existing parser finds at least one user turn in ``path``."""
+    return _skip_reason(path, fmt) is None
 
 
 def _claude_pool(
@@ -205,12 +242,16 @@ def discover_latest(
     entries.sort(key=lambda entry: (-entry[0], str(entry[1])))
 
     skipped = 0
+    skipped_logs: list[SkippedLog] = []
     chosen: tuple[int, Path, str, str] | None = None
     runner_up: tuple[int, Path, str, str] | None = None
     for entry in entries:
-        if not _has_user_turn(entry[1], entry[2]):
+        reason = _skip_reason(entry[1], entry[2])
+        if reason is not None:
             if chosen is None:
                 skipped += 1
+                if len(skipped_logs) < MAX_SKIPPED_SHOWN:
+                    skipped_logs.append(SkippedLog(entry[1].name, reason))
             continue
         if chosen is None:
             chosen = entry
@@ -221,7 +262,8 @@ def discover_latest(
     if chosen is None:
         raise DiscoveryError(
             f"found {len(entries)} session log(s) but none contains a user turn "
-            "(sub-agent-only logs carry none). "
+            "(sub-agent-only logs carry none).\n"
+            f"{_skipped_lines(skipped_logs, skipped)}"
             "Pass --session <path> to name one explicitly."
         )
     if runner_up is not None and runner_up[0] == chosen[0]:
@@ -232,12 +274,31 @@ def discover_latest(
             f"  {runner_up[1]}\n"
             "Pass --session <path> to name one explicitly."
         )
-    return Discovery(path=chosen[1], fmt=chosen[2], scope=chosen[3], skipped=skipped)
+    return Discovery(
+        path=chosen[1],
+        fmt=chosen[2],
+        scope=chosen[3],
+        skipped=skipped,
+        skipped_logs=tuple(skipped_logs),
+    )
+
+
+def _skipped_lines(logs: list[SkippedLog] | tuple[SkippedLog, ...], total: int) -> str:
+    """Indented ``name: reason`` lines for skipped logs, each ending in a newline.
+
+    Names at most :data:`MAX_SKIPPED_SHOWN` logs and says how many were left out.
+    """
+    lines = [f"  skipped {log.name}: {log.reason}\n" for log in logs]
+    hidden = total - len(logs)
+    if hidden > 0:
+        lines.append(f"  ... and {hidden} more\n")
+    return "".join(lines)
 
 
 def describe(found: Discovery) -> str:
-    """One line naming the chosen log, for stderr."""
+    """The chosen log, for stderr; skipped newer logs follow on indented lines."""
     line = f"using {found.fmt} session log: {found.path}"
     if found.skipped:
-        line += f" ({found.skipped} newer log(s) skipped: no user turn)"
+        line += f" ({found.skipped} newer log(s) skipped)"
+        line += "\n" + _skipped_lines(found.skipped_logs, found.skipped).rstrip("\n")
     return line

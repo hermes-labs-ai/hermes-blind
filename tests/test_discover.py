@@ -17,9 +17,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from hermes_blind.apply import main as apply_main  # noqa: E402
 from hermes_blind.discover import (  # noqa: E402
+    MAX_SKIPPED_SHOWN,
     DiscoveryError,
     claude_projects_dir,
     codex_sessions_dir,
+    describe,
     discover_latest,
     encoded_project_names,
 )
@@ -328,3 +330,148 @@ def test_a_symlinked_project_directory_is_found_under_its_literal_path(home, tmp
 
     assert found.path == chosen
     assert found.fmt == "claude"
+
+
+# ---------------------------------------------------------------------------
+# Skipped-log diagnostics
+# ---------------------------------------------------------------------------
+
+
+def test_a_skipped_subagent_log_is_named_with_its_reason(home):
+    directory = _project_dir(home)
+    real = _write(directory / "real.jsonl", _claude_session(), 1_000)
+    _write(directory / "sub.jsonl", _claude_subagent_only(), 9_000)
+
+    found = discover_latest(cwd=PROJECT)
+
+    assert found.path == real
+    assert [(log.name, log.reason) for log in found.skipped_logs] == [
+        ("sub.jsonl", "no user turn")
+    ]
+
+
+def test_an_unreadable_log_is_skipped_as_unreadable(home):
+    directory = _project_dir(home)
+    real = _write(directory / "real.jsonl", _claude_session(), 1_000)
+    bad = directory / "bad.jsonl"
+    bad.write_bytes(b"\xff\xfe not utf-8 \xff\n")
+    os.utime(bad, (9_000, 9_000))
+
+    found = discover_latest(cwd=PROJECT)
+
+    assert found.path == real
+    assert found.skipped == 1
+    assert found.skipped_logs[0].name == "bad.jsonl"
+    assert found.skipped_logs[0].reason.startswith("unreadable")
+
+
+def test_a_log_of_only_corrupt_lines_reports_the_unparseable_count(home):
+    directory = _project_dir(home)
+    real = _write(directory / "real.jsonl", _claude_session(), 1_000)
+    corrupt = directory / "corrupt.jsonl"
+    corrupt.write_text("not json\n{truncated\n", encoding="utf-8")
+    os.utime(corrupt, (9_000, 9_000))
+
+    found = discover_latest(cwd=PROJECT)
+
+    assert found.path == real
+    assert found.skipped_logs[0].reason == "no user turn (2 unparseable line(s))"
+
+
+def test_a_skipped_codex_log_is_named_too(home):
+    day = home / ".codex" / "sessions" / "2026" / "10" / "01"
+    real = _write(day / "rollout-real.jsonl", _codex_rollout(), 1_000)
+    _write(day / "rollout-empty.jsonl", [{"type": "session_meta", "payload": {}}], 9_000)
+
+    found = discover_latest(fmt="codex")
+
+    assert found.path == real
+    assert [log.name for log in found.skipped_logs] == ["rollout-empty.jsonl"]
+
+
+def test_skipped_logs_are_listed_newest_first(home):
+    directory = _project_dir(home)
+    _write(directory / "real.jsonl", _claude_session(), 1_000)
+    _write(directory / "older.jsonl", _claude_subagent_only(), 5_000)
+    _write(directory / "newer.jsonl", _claude_subagent_only(), 9_000)
+
+    found = discover_latest(cwd=PROJECT)
+
+    assert [log.name for log in found.skipped_logs] == ["newer.jsonl", "older.jsonl"]
+
+
+def test_the_skipped_list_is_bounded_but_the_count_is_not(home):
+    directory = _project_dir(home)
+    real = _write(directory / "real.jsonl", _claude_session(), 1_000)
+    extra = MAX_SKIPPED_SHOWN + 2
+    for i in range(extra):
+        _write(directory / f"sub-{i:02d}.jsonl", _claude_subagent_only(), 2_000 + i)
+
+    found = discover_latest(cwd=PROJECT)
+    text = describe(found)
+
+    assert found.path == real
+    assert found.skipped == extra
+    assert len(found.skipped_logs) == MAX_SKIPPED_SHOWN
+    assert text.count("  skipped sub-") == MAX_SKIPPED_SHOWN
+    assert "  ... and 2 more" in text
+
+
+def test_discovery_diagnostics_are_deterministic(home):
+    directory = _project_dir(home)
+    _write(directory / "real.jsonl", _claude_session(), 1_000)
+    for name in ("b.jsonl", "a.jsonl", "c.jsonl"):
+        _write(directory / name, _claude_subagent_only(), 9_000)  # same mtime
+
+    first = describe(discover_latest(cwd=PROJECT))
+    second = describe(discover_latest(cwd=PROJECT))
+
+    assert first == second
+    assert [line.split()[1] for line in first.splitlines()[1:]] == [
+        "a.jsonl:",
+        "b.jsonl:",
+        "c.jsonl:",
+    ]
+
+
+def test_skipped_logs_are_shown_by_basename_not_absolute_path(home):
+    directory = _project_dir(home)
+    _write(directory / "real.jsonl", _claude_session(), 1_000)
+    _write(directory / "sub.jsonl", _claude_subagent_only(), 9_000)
+
+    skipped_lines = describe(discover_latest(cwd=PROJECT)).splitlines()[1:]
+
+    assert skipped_lines == ["  skipped sub.jsonl: no user turn"]
+    assert str(directory) not in "".join(skipped_lines)
+
+
+def test_describe_is_one_line_when_nothing_was_skipped(home):
+    _write(_project_dir(home) / "s.jsonl", _claude_session(), 1_000)
+
+    assert "\n" not in describe(discover_latest(cwd=PROJECT))
+
+
+def test_refusal_when_no_log_has_a_user_turn_names_what_was_skipped(home):
+    directory = _project_dir(home)
+    _write(directory / "sub.jsonl", _claude_subagent_only(), 1_000)
+
+    with pytest.raises(DiscoveryError) as excinfo:
+        discover_latest(cwd=PROJECT)
+
+    message = str(excinfo.value)
+    assert "none contains a user turn" in message
+    assert "  skipped sub.jsonl: no user turn" in message
+    assert "--session" in message
+
+
+def test_apply_latest_prints_skipped_logs_on_stderr(home, tmp_path, capsys):
+    directory = _project_dir(home)
+    _write(directory / "real.jsonl", _claude_session(), 1_000)
+    _write(directory / "sub.jsonl", _claude_subagent_only(), 9_000)
+    out = tmp_path / "recovery.md"
+
+    assert apply_main(["--latest", "--cwd", str(PROJECT), "--turn", "9", "--out", str(out)]) == 0
+
+    err = capsys.readouterr().err
+    assert "1 newer log(s) skipped" in err
+    assert "  skipped sub.jsonl: no user turn" in err
